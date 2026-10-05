@@ -162,8 +162,9 @@
     <div class="row">
       <div><label for="sTrelloKey">Trello API key</label><input id="sTrelloKey" type="text" autocomplete="off" spellcheck="false"></div>
       <div><label for="sTrelloToken">Trello token (read-only)</label><input id="sTrelloToken" type="password" autocomplete="off" spellcheck="false"></div>
+      <div><label for="sTrelloList">List to count as "my cards" (optional)</label><input id="sTrelloList" type="text" placeholder="Blank = cards assigned to me" autocomplete="off"></div>
     </div>
-    <p class="hint">The Trello key and token are stored in this browser only.</p>
+    <p class="hint">The Trello key and token are stored in this browser only. Leave the list blank to count open cards assigned to you; or type a list name (for example your To Do list) to count the cards in it, across all your boards.</p>
     <label>Show the dot, badge and pop-ups when something new arrives in</label>
     <div style="margin-bottom:12px">
       <label class="chk"><input type="checkbox" id="bSupport"> Support inbox</label>
@@ -285,7 +286,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     sharedMailbox: "",     // support mailbox address
     folderName: "",        // your folder name
     folderIn: "own",       // "own" or "shared"
-    refreshSeconds: 15,
+    refreshSeconds: 10,
     titles: { support: "SUPPORT INBOX", folder: "JadonL Support Inbox", personal: "jadonl@goparagon.com" }
   };
   // ================================================================================
@@ -300,7 +301,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     name: CONFIG.name, clientId: CONFIG.clientId, tenantId: CONFIG.tenantId, shared: CONFIG.sharedMailbox,
     folder: CONFIG.folderName, folderIn: CONFIG.folderIn, refresh: CONFIG.refreshSeconds,
     badge: { support: true, folder: true, personal: true, teams: true, calendar: false, team: false, trello: true },
-    dismissed: [], notify: false, teamPrefix: "Support", trelloKey: "", trelloToken: ""
+    dismissed: [], notify: false, teamPrefix: "Support", trelloKey: "", trelloToken: "", trelloList: ""
   };
   var msalApp = null, account = null, me = null;
   var tiles = {}, busy = false, timer = null, needSignIn = false;
@@ -477,6 +478,40 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       var snippet = typeof d.text === "string" ? d.text.replace(/\s+/g, " ").trim().slice(0, 80) : "";
       return { id: n.id, title: title, meta: meta, note: (who ? who + " " : "") + verb + ": " + title + (snippet ? " \u2014 " + snippet : ""), url: safeUrl(link) };
     });
+    // "my cards": refreshed at most about once a minute, and a failure here never hides the notifications
+    var listKey = (cfg.trelloList || "").trim().toLowerCase();
+    if (tile.cards == null || tile.cardsKey !== listKey || Date.now() - (tile.cardsAt || 0) > 45000) {
+      try { tile.cards = await countTrelloCards(listKey); tile.cardsErr = null; tile.cardsKey = listKey; tile.cardsAt = Date.now(); }
+      catch (e) { tile.cards = null; tile.cardsErr = (e && e.message) || "Couldn\u2019t count cards."; }
+    }
+  }
+  async function trelloGet(path) {
+    var url = "https://api.trello.com/1" + path + (path.indexOf("?") >= 0 ? "&" : "?") + "key=" + encodeURIComponent(cfg.trelloKey.trim()) + "&token=" + encodeURIComponent(cfg.trelloToken.trim());
+    var res;
+    try { res = await fetch(url); } catch (e) { throw new Error("Couldn\u2019t reach Trello."); }
+    if (res.status === 429) { pauseUntil = Date.now() + 30000; throw new Error("Trello is rate-limiting."); }
+    if (!res.ok) throw new Error("Trello returned an error (" + res.status + ").");
+    return res.json();
+  }
+  var trelloListIds = null;   // { key, at, ids }
+  async function countTrelloCards(listKey) {
+    if (!listKey) {
+      var mine = await trelloGet("/members/me/cards?filter=open&fields=id");
+      return Array.isArray(mine) ? mine.length : 0;
+    }
+    if (!trelloListIds || trelloListIds.key !== listKey || Date.now() - trelloListIds.at > 600000) {
+      var boards = await trelloGet("/members/me/boards?filter=open&fields=name&lists=open&list_fields=name");
+      var ids = [];
+      (boards || []).forEach(function (b) { (b.lists || []).forEach(function (l) { if (String(l.name || "").trim().toLowerCase() === listKey) ids.push(l.id); }); });
+      trelloListIds = { key: listKey, at: Date.now(), ids: ids };
+    }
+    if (!trelloListIds.ids.length) throw new Error("No open Trello list named \u201c" + cfg.trelloList + "\u201d was found.");
+    var total = 0;
+    for (var i = 0; i < trelloListIds.ids.length; i++) {
+      var cs = await trelloGet("/lists/" + trelloListIds.ids[i] + "/cards?fields=id");
+      total += Array.isArray(cs) ? cs.length : 0;
+    }
+    return total;
   }
 
   // ---------- calendar ----------
@@ -509,31 +544,57 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     var h = Math.floor(m / 60); if (h < 24) return h + "h ago";
     var days = Math.floor(h / 24); return days + (days === 1 ? " day ago" : " days ago");
   }
+  var recvCache = {};   // chat id -> { at: time of the chat's last message, msg: newest message from someone else (or null) }
+  async function newestFromOthers(chatId) {
+    var p = "/me/chats/" + encodeURIComponent(chatId) + "/messages?$top=20";
+    var r;
+    try { r = await gfetch(p + "&$orderby=" + encodeURIComponent("createdDateTime desc")); }
+    catch (e) { if (e && e.status === 400) r = await gfetch(p); else throw e; }
+    var list = (r.value || []).filter(function (x) {
+      return x.messageType === "message" && !x.deletedDateTime && x.from && x.from.user && x.from.user.id !== me.id;
+    }).sort(function (x, y) { return String(y.createdDateTime).localeCompare(String(x.createdDateTime)); });
+    var f = list[0];
+    return f ? { when: f.createdDateTime, name: f.from.user.displayName, text: f.body && f.body.content } : null;
+  }
   async function loadTeams(tile) {
     if (!me) me = await gfetch("/me?$select=id,displayName,mail");
     var base = "/me/chats?$top=50&$expand=lastMessagePreview";
     var r;
     try { r = await gfetch(base + "&$orderby=" + encodeURIComponent("lastMessagePreview/createdDateTime desc")); }
     catch (e) { if (e && e.status === 400) r = await gfetch(base); else throw e; }
-    var out = [];
-    (r.value || []).forEach(function (c) {
-      var lp = c.lastMessagePreview, vp = c.viewpoint || {};
-      if (!lp || lp.isDeleted || vp.isHidden) return;
-      if (lp.messageType && lp.messageType !== "message") return;
-      var u = lp.from && lp.from.user;
-      if (u && u.id === me.id) return;   // only messages you received
-      var name = (u && u.displayName) || "Someone";
-      var text = htmlToText(lp.body && lp.body.content) || "(attachment or non-text message)";
+    var chats = (r.value || []).filter(function (c) { return c.lastMessagePreview && !(c.viewpoint && c.viewpoint.isHidden); })
+      .sort(function (x, y) { return String(y.lastMessagePreview.createdDateTime).localeCompare(String(x.lastMessagePreview.createdDateTime)); });
+    var out = [], lookups = 0, throttled = false;
+    for (var i = 0; i < chats.length; i++) {
+      var c = chats[i], lp = c.lastMessagePreview, at = lp.createdDateTime;
+      // chats are newest-first, so once we have 10 and this chat's last activity is older than our 10th, nothing later can beat it
+      if (out.length >= 10 && String(at) < String(out[9].when)) break;
+      var u = lp.from && lp.from.user, m = null;
+      if (!lp.isDeleted && (!lp.messageType || lp.messageType === "message") && u && u.id !== me.id) {
+        m = { when: at, name: u.displayName, text: lp.body && lp.body.content };      // the chat's last message is from someone else
+      } else {
+        // your own reply (or a system event) is the last message: find the newest message from the other person
+        var cached = recvCache[c.id];
+        if (cached && cached.at === at) m = cached.msg;
+        else if (lookups < 12) {
+          lookups++;
+          try { m = await newestFromOthers(c.id); recvCache[c.id] = { at: at, msg: m }; }
+          catch (e) { m = cached ? cached.msg : null; if (e && e.status === 429) { throttled = true; break; } }
+        } else m = cached ? cached.msg : null;
+      }
+      if (!m || !m.when) continue;
+      var text = htmlToText(m.text) || "(attachment or non-text message)";
       out.push({
-        id: c.id + "|" + lp.createdDateTime, when: lp.createdDateTime,
-        title: name + (c.topic ? " \u00b7 " + c.topic : ""),
-        meta: fmtAgo(new Date(lp.createdDateTime)) + " \u00b7 " + text.slice(0, 140),
+        id: c.id + "|" + m.when, when: m.when,
+        title: (m.name || "Someone") + (c.topic ? " \u00b7 " + c.topic : ""),
+        meta: fmtAgo(new Date(m.when)) + " \u00b7 " + text.slice(0, 140),
         url: safeUrl(c.webUrl),
         appUrl: /^https:\/\/teams\.microsoft\.com\/l\//i.test(c.webUrl || "") ? String(c.webUrl).replace(/^https:\/\//i, "msteams://") : null
       });
-    });
-    out.sort(function (x, y) { return String(y.when).localeCompare(String(x.when)); });
-    tile.items = out.slice(0, 10);
+      out.sort(function (x, y) { return String(y.when).localeCompare(String(x.when)); });
+    }
+    if (throttled && tile.items && tile.items.length) { tile.loaded = true; return; }   // keep what we had while Microsoft is rate-limiting
+    tile.items = out.filter(Boolean).slice(0, 10);
     tile.loaded = true;
   }
 
@@ -592,7 +653,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       if (t.kind === "teams") {
         var head = el("div", "thead"); head.appendChild(h2);
         if (t.items && t.items.length > 3) {
-          var tb = el("button", "more", t.expanded ? "Show less" : "Show " + (t.items.length - 3) + " more");
+          var tb = el("button", "more", t.expanded ? "Show less" : "Show more");
           tb.addEventListener("click", function () { t.expanded = !t.expanded; render(); });
           head.appendChild(tb);
         }
@@ -610,6 +671,11 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
             c = el("div", "stats");
             [[t.remaining, "upcoming", (t.remaining === 0 ? "zero" : "some")], [t.done, "done", "green"]].forEach(function (pr) {
               var blk = el("div"); blk.appendChild(el("div", "count " + pr[2], String(pr[0]))); blk.appendChild(el("div", "note", pr[1])); c.appendChild(blk);
+            });
+          } else if (t.kind === "trello") {
+            c = el("div", "stats");
+            [[String(t.count) + (t.capped && t.count > 0 ? "+" : ""), "unread", t.count === 0 ? "zero" : "some"], [t.cards == null ? "\u2013" : String(t.cards), "my cards", t.cards ? "some" : "zero"]].forEach(function (pr) {
+              var blk = el("div"); blk.appendChild(el("div", "count " + pr[2], pr[0])); blk.appendChild(el("div", "note", pr[1])); c.appendChild(blk);
             });
           } else if (t.kind === "team") {
             if (t.people && t.people.length) {
@@ -631,6 +697,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
           else if (t.kind === "trello" && t.count === 0) { /* no note */ }
           else if (t.kind === "mail" && t.count === 0) box.appendChild(el("div", "note", "No emails in this folder."));
         }
+        if (t.kind === "trello" && t.cardsErr) box.appendChild(el("div", "err", "Card count unavailable: " + t.cardsErr));
         if (t.state === "error") box.appendChild(el("div", "err", t.msg));
         if (t.kind === "teams" && t.loaded && (!t.items || !t.items.length)) box.appendChild(el("div", "note", "No recent messages from others."));
         if (t.items && t.items.length) {
@@ -770,6 +837,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     if (Date.now() < pauseUntil) { $("status").textContent = "Microsoft asked us to slow down; resuming in " + Math.ceil((pauseUntil - Date.now()) / 1000) + "s"; return; }
     if (!account) { needSignIn = true; updateIndicators(); return; }
     busy = true; needSignIn = false; $("btnRefresh").disabled = true; $("status").textContent = "Refreshing\u2026";
+    var stamp = new Date(Math.floor(Date.now() / 1000) * 1000);   // the moment this refresh started, so on-the-clock refreshes read :00, :10, :20
     var keys = Object.keys(tiles);
     keys.forEach(function (k) {
       var t = tiles[k], need = t.need ? t.need() : null;
@@ -787,12 +855,16 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     if (needSignIn) showBanner("Your Microsoft sign-in has expired (these last about a day in a browser page).", "Sign in again", signIn);
     else $("banner").style.display = "none";
     render(); updateIndicators();
-    $("status").textContent = "Updated " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+    $("status").textContent = "Updated " + stamp.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
     $("btnRefresh").disabled = false; busy = false;
   }
   function startTimer() {
-    if (timer) clearInterval(timer);
-    timer = setInterval(refresh, Math.max(10, Number(cfg.refresh) || 15) * 1000);
+    if (timer) clearTimeout(timer);
+    var ms = Math.max(10, Number(cfg.refresh) || 15) * 1000;
+    function schedule() {   // fire on the clock: every 10s means :00, :10, :20 ...; the extra 30ms keeps a slightly early timer from landing in the previous second
+      timer = setTimeout(function () { refresh(); schedule(); }, ms - (Date.now() % ms) + 30);
+    }
+    schedule();
   }
 
 
@@ -928,7 +1000,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     $("sName").value = cfg.name; $("sClient").value = cfg.clientId; $("sTenant").value = cfg.tenantId; $("sRefresh").value = cfg.refresh;
     $("sShared").value = cfg.shared; $("sFolder").value = cfg.folder; $("sFolderIn").value = cfg.folderIn;
     $("bSupport").checked = cfg.badge.support; $("bFolder").checked = cfg.badge.folder; $("bPersonal").checked = cfg.badge.personal;
-    $("bCalendar").checked = cfg.badge.calendar; $("bTeam").checked = cfg.badge.team; $("bTrello").checked = cfg.badge.trello; $("sTrelloKey").value = cfg.trelloKey; $("sTrelloToken").value = cfg.trelloToken; $("sPrefix").value = cfg.teamPrefix;
+    $("bCalendar").checked = cfg.badge.calendar; $("bTeam").checked = cfg.badge.team; $("bTrello").checked = cfg.badge.trello; $("sTrelloKey").value = cfg.trelloKey; $("sTrelloToken").value = cfg.trelloToken; $("sTrelloList").value = cfg.trelloList; $("sPrefix").value = cfg.teamPrefix;
   }
   function syncNotifyBtn() {
     var b = $("btnNotify"), on = notifyOn();
@@ -955,7 +1027,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       cfg.name = $("sName").value.trim() || "Work Dashboard"; cfg.clientId = $("sClient").value.trim(); cfg.tenantId = $("sTenant").value.trim();
       var r = parseInt($("sRefresh").value, 10); cfg.refresh = r >= 10 && r <= 900 ? r : 15; cfg.teamPrefix = $("sPrefix").value.trim() || "Support";
       cfg.shared = $("sShared").value.trim(); cfg.folder = $("sFolder").value.trim(); cfg.folderIn = $("sFolderIn").value;
-      cfg.badge = { support: $("bSupport").checked, folder: $("bFolder").checked, personal: $("bPersonal").checked, calendar: $("bCalendar").checked, team: $("bTeam").checked, trello: $("bTrello").checked }; cfg.trelloKey = $("sTrelloKey").value.trim(); cfg.trelloToken = $("sTrelloToken").value.trim();
+      cfg.badge = { support: $("bSupport").checked, folder: $("bFolder").checked, personal: $("bPersonal").checked, calendar: $("bCalendar").checked, team: $("bTeam").checked, trello: $("bTrello").checked }; cfg.trelloKey = $("sTrelloKey").value.trim(); cfg.trelloToken = $("sTrelloToken").value.trim(); cfg.trelloList = $("sTrelloList").value.trim();
       saveCfg(); location.reload();
     });
     $("btnAuth").addEventListener("click", function () {
