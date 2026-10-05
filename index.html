@@ -114,6 +114,11 @@
       <div><label for="sFolderIn">Folder lives in</label>
         <select id="sFolderIn"><option value="own">My mailbox</option><option value="shared">The shared mailbox</option></select></div>
     </div>
+    <div class="row">
+      <div><label for="sTrelloKey">Trello API key</label><input id="sTrelloKey" type="text" autocomplete="off" spellcheck="false"></div>
+      <div><label for="sTrelloToken">Trello token (read-only)</label><input id="sTrelloToken" type="password" autocomplete="off" spellcheck="false"></div>
+    </div>
+    <p class="hint">The Trello key and token are stored in this browser only.</p>
     <label>Show the dot, badge and pop-ups when something new arrives in</label>
     <div style="margin-bottom:12px">
       <label class="chk"><input type="checkbox" id="bSupport"> Support inbox</label>
@@ -122,6 +127,7 @@
       <label class="chk"><input type="checkbox" id="bTeams"> Teams unread</label>
       <label class="chk"><input type="checkbox" id="bCalendar"> Upcoming meetings</label>
       <label class="chk"><input type="checkbox" id="bTeam"> Team folders</label>
+      <label class="chk"><input type="checkbox" id="bTrello"> Trello unread</label>
     </div>
     <button id="btnSave" class="primary">Save &amp; reload</button>
   </section>
@@ -229,8 +235,8 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   var cfg = {
     name: CONFIG.name, clientId: CONFIG.clientId, tenantId: CONFIG.tenantId, shared: CONFIG.sharedMailbox,
     folder: CONFIG.folderName, folderIn: CONFIG.folderIn, refresh: CONFIG.refreshSeconds,
-    badge: { support: true, folder: true, personal: true, teams: true, calendar: false, team: false },
-    dismissed: [], notify: false, teamPrefix: "Support"
+    badge: { support: true, folder: true, personal: true, teams: true, calendar: false, team: false, trello: true },
+    dismissed: [], notify: false, teamPrefix: "Support", trelloKey: "", trelloToken: ""
   };
   var msalApp = null, account = null, me = null;
   var tiles = {}, busy = false, timer = null, needSignIn = false;
@@ -367,6 +373,39 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     tile.items = [];
   }
 
+  // ---------- Trello (Trello's own unread flag) ----------
+  var TRELLO_VERBS = {
+    mentionedOnCard: "mentioned you", commentCard: "commented", addedToCard: "added you to this card",
+    removedFromCard: "removed you from this card", addedToBoard: "added you to this board",
+    invitedToBoard: "invited you to a board", changeCard: "updated this card", cardDueSoon: "is due soon",
+    addedMemberToCard: "added someone to this card", addAttachmentToCard: "attached something", createdCard: "created this card",
+    makeAdminOfBoard: "made you an admin", removedFromBoard: "removed you from a board", closeBoard: "closed this board"
+  };
+  async function loadTrello(tile) {
+    var url = "https://api.trello.com/1/members/me/notifications?read_filter=unread&limit=50&key=" +
+      encodeURIComponent(cfg.trelloKey.trim()) + "&token=" + encodeURIComponent(cfg.trelloToken.trim());
+    var res;
+    try { res = await fetch(url); }
+    catch (e) { throw new Error("Couldn\u2019t reach Trello. If your API key has an allowed-origins list, add " + location.origin + " to it."); }
+    if (res.status === 429) { pauseUntil = Date.now() + 30000; throw new Error("Trello is rate-limiting; it will retry shortly."); }
+    if (res.status === 401 || res.status === 403) { var ce = new Error("Trello rejected the key or token. Check them in Settings."); ce.clear = true; throw ce; }
+    if (!res.ok) throw new Error("Trello returned an error (" + res.status + ").");
+    var list = await res.json();
+    if (!Array.isArray(list)) throw new Error("Trello returned something unexpected.");
+    tile.count = list.length;
+    tile.capped = list.length >= 50;
+    tile.items = list.map(function (n) {
+      var d = n.data || {}, card = d.card, board = d.board;
+      var who = n.memberCreator && n.memberCreator.fullName;
+      var verb = TRELLO_VERBS[n.type] || n.type || "notification";
+      var title = (card && card.name) || (board && board.name) || "Trello notification";
+      var meta = (who ? who + " " : "") + verb + (card && board ? " \u00b7 " + board.name : "");
+      var link = card && card.shortLink ? "https://trello.com/c/" + card.shortLink : (board && board.shortLink ? "https://trello.com/b/" + board.shortLink : null);
+      var snippet = typeof d.text === "string" ? d.text.replace(/\s+/g, " ").trim().slice(0, 80) : "";
+      return { id: n.id, title: title, meta: meta, note: (who ? who + " " : "") + verb + ": " + title + (snippet ? " \u2014 " + snippet : ""), url: safeUrl(link) };
+    });
+  }
+
   // ---------- calendar ----------
   function gdate(o) { return new Date(String(o.dateTime).replace(/\.\d+$/, "") + "Z"); }
   async function loadCal(tile) {
@@ -452,7 +491,10 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         run: function (t) { return loadMail(t, cfg.folderIn === "shared" ? sharedBase() : "/me", cfg.folder.trim()); } },
       personal: { title: CONFIG.titles.personal, kind: "mail", run: function (t) { return loadMail(t, "/me", "inbox"); } },
       team: { title: "Team support folders", kind: "team", wide: true, run: loadTeam },
-      teams: { title: "Teams \u00b7 unread", kind: "teams", wide: true, run: loadTeams }
+      teams: { title: "Teams \u00b7 unread", kind: "teams", wide: true, run: loadTeams },
+      trello: { title: "Trello \u00b7 unread", kind: "trello", wide: true,
+        need: function () { return (cfg.trelloKey.trim() && cfg.trelloToken.trim()) ? null : "Add your Trello API key and token in Settings."; },
+        run: loadTrello }
     };
     Object.keys(tiles).forEach(function (k) { tiles[k].state = "idle"; tiles[k].items = []; });
   }
@@ -516,16 +558,17 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
               c = el("div", "note", "No folders starting with \u201c" + (cfg.teamPrefix || "Support") + "\u201d were found.");
             }
           } else {
-            c = el("div", "count " + (t.count === 0 ? "zero" : "some"), String(t.count));
+            c = el("div", "count " + (t.count === 0 ? "zero" : "some"), String(t.count) + (t.capped && t.count > 0 ? "+" : ""));
           }
           box.appendChild(c);
           if (t.kind === "teams") box.appendChild(el("div", "note", "Chats where someone else has the latest message and you haven\u2019t read it. Covers your 50 most recent chats; channel posts aren\u2019t included."));
+          else if (t.kind === "trello" && t.count === 0) box.appendChild(el("div", "note", "No unread notifications."));
           else if (t.kind === "mail" && t.count === 0) box.appendChild(el("div", "note", "No emails in this folder."));
         }
         if (t.state === "error") box.appendChild(el("div", "err", t.msg));
         if (t.items && t.items.length) {
           var ul = el("ul");
-          var LIMIT = (t.kind === "mail" || t.kind === "cal") ? 3 : 1000;
+          var LIMIT = (t.kind === "mail" || t.kind === "cal" || t.kind === "trello") ? 3 : 1000;
           var shownItems = (t.expanded || t.items.length <= LIMIT) ? t.items : t.items.slice(0, LIMIT);
           shownItems.forEach(function (it) {
             var li = el("li");
@@ -649,7 +692,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       try { await t.run(t); t.state = "ok"; }
       catch (e) {
         t.state = "error"; t.msg = errText(e);
-        if (e && (e.status === 401 || e.status === 403 || e.status === 404)) { t.count = null; t.items = []; t.all = []; }
+        if (e && (e.status === 401 || e.status === 403 || e.status === 404 || e.clear)) { t.count = null; t.items = []; t.all = []; }
       }
     }));
     if (needSignIn) showBanner("Your Microsoft sign-in has expired (these last about a day in a browser page).", "Sign in again", signIn);
@@ -669,7 +712,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     $("sName").value = cfg.name; $("sClient").value = cfg.clientId; $("sTenant").value = cfg.tenantId; $("sRefresh").value = cfg.refresh;
     $("sShared").value = cfg.shared; $("sFolder").value = cfg.folder; $("sFolderIn").value = cfg.folderIn;
     $("bSupport").checked = cfg.badge.support; $("bFolder").checked = cfg.badge.folder; $("bPersonal").checked = cfg.badge.personal;
-    $("bTeams").checked = cfg.badge.teams; $("bCalendar").checked = cfg.badge.calendar; $("bTeam").checked = cfg.badge.team; $("sPrefix").value = cfg.teamPrefix;
+    $("bTeams").checked = cfg.badge.teams; $("bCalendar").checked = cfg.badge.calendar; $("bTeam").checked = cfg.badge.team; $("bTrello").checked = cfg.badge.trello; $("sTrelloKey").value = cfg.trelloKey; $("sTrelloToken").value = cfg.trelloToken; $("sPrefix").value = cfg.teamPrefix;
   }
   function syncNotifyBtn() {
     var b = $("btnNotify"), on = notifyOn();
@@ -696,7 +739,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       cfg.name = $("sName").value.trim() || "Work Dashboard"; cfg.clientId = $("sClient").value.trim(); cfg.tenantId = $("sTenant").value.trim();
       var r = parseInt($("sRefresh").value, 10); cfg.refresh = r >= 10 && r <= 900 ? r : 15; cfg.teamPrefix = $("sPrefix").value.trim() || "Support";
       cfg.shared = $("sShared").value.trim(); cfg.folder = $("sFolder").value.trim(); cfg.folderIn = $("sFolderIn").value;
-      cfg.badge = { support: $("bSupport").checked, folder: $("bFolder").checked, personal: $("bPersonal").checked, teams: $("bTeams").checked, calendar: $("bCalendar").checked, team: $("bTeam").checked };
+      cfg.badge = { support: $("bSupport").checked, folder: $("bFolder").checked, personal: $("bPersonal").checked, teams: $("bTeams").checked, calendar: $("bCalendar").checked, team: $("bTeam").checked, trello: $("bTrello").checked }; cfg.trelloKey = $("sTrelloKey").value.trim(); cfg.trelloToken = $("sTrelloToken").value.trim();
       saveCfg(); location.reload();
     });
     $("btnAuth").addEventListener("click", function () {
