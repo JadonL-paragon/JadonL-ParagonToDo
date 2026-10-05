@@ -40,10 +40,11 @@
   .tile h2.caps { text-transform: uppercase; letter-spacing: .04em; }
   :root { --row: 55px; }
   .tile.col { display: flex; flex-direction: column; }
-  .fillwrap { position: relative; flex: 1; min-height: 150px; margin-top: 12px; }
+  .fillwrap { position: relative; flex: 1; min-height: 420px; margin-top: 12px; }
   ul.fillul { position: absolute; inset: 0; overflow-y: auto; margin: 0; }
   ul.scroll2 { max-height: calc(var(--row) * 2); overflow-y: auto; }
-  ul.fillul, ul.scroll2 { scrollbar-width: thin; padding-right: 6px; }
+  ul.fillul, ul.scroll2 { scrollbar-width: thin; scrollbar-color: transparent transparent; padding-right: 6px; }
+  ul.fillul:hover, ul.scroll2:hover { scrollbar-color: var(--muted) transparent; }
   .ticon { width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; border-radius: 3px; }
   .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
   .dot.green { background: var(--good); }
@@ -515,7 +516,8 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         id: c.id + "|" + lp.createdDateTime, when: lp.createdDateTime,
         title: name + (c.topic ? " \u00b7 " + c.topic : ""),
         meta: fmtAgo(new Date(lp.createdDateTime)) + " \u00b7 " + text.slice(0, 140),
-        url: safeUrl(c.webUrl)
+        url: safeUrl(c.webUrl),
+        appUrl: /^https:\/\/teams\.microsoft\.com\/l\//i.test(c.webUrl || "") ? String(c.webUrl).replace(/^https:\/\//i, "msteams://") : null
       });
     });
     out.sort(function (x, y) { return String(y.when).localeCompare(String(x.when)); });
@@ -526,7 +528,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   // ---------- tiles ----------
   function defineTiles() {
     tiles = {
-      calendar: { title: "Meetings today", kind: "cal", wide: true, run: loadCal },
+      calendar: { title: "Meetings today", kind: "cal", half: true, run: loadCal },
       support: { title: CONFIG.titles.support, kind: "mail", caps: true,
         need: function () { return cfg.shared.trim() ? null : "Add the support mailbox address in Settings."; },
         run: function (t) { return loadMail(t, sharedBase(), "inbox"); } },
@@ -539,20 +541,23 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         run: function (t) { return loadMail(t, cfg.folderIn === "shared" ? sharedBase() : "/me", cfg.folder.trim()); } },
       personal: { title: CONFIG.titles.personal, kind: "mail", run: function (t) { return loadMail(t, "/me", "inbox"); } },
       team: { title: "Team support folders", kind: "team", wide: true, run: loadTeam },
-      teams: { title: "Teams \u00b7 recent messages", kind: "teams", half: true, run: loadTeams },
+      teams: { title: "Teams \u00b7 recent messages", kind: "teams", wide: true, icon: "teams", run: loadTeams },
       trello: { title: "Trello \u00b7 unread", kind: "trello", half: true, icon: "trello",
         need: function () { return (cfg.trelloKey.trim() && cfg.trelloToken.trim()) ? null : "Add your Trello API key and token in Settings."; },
         run: loadTrello }
     };
-    var order = ["teams", "trello", "support", "folder", "personal", "team", "calendar"], ordered = {};
+    var order = ["calendar", "trello", "support", "folder", "personal", "team", "teams"], ordered = {};
     order.forEach(function (k) { ordered[k] = tiles[k]; });
     tiles = ordered;
     Object.keys(tiles).forEach(function (k) { tiles[k].state = "idle"; tiles[k].items = []; });
   }
 
-  function trelloIcon() {
-    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="4" fill="#0052CC"/><rect x="4" y="4" width="6.5" height="15" rx="1.5" fill="#fff"/><rect x="13.5" y="4" width="6.5" height="9" rx="1.5" fill="#fff"/></svg>';
-    var img = document.createElement("img"); img.src = "data:image/svg+xml;utf8," + encodeURIComponent(svg); img.alt = ""; img.className = "ticon";
+  var ICONS = {
+    trello: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="4" fill="#0052CC"/><rect x="4" y="4" width="6.5" height="15" rx="1.5" fill="#fff"/><rect x="13.5" y="4" width="6.5" height="9" rx="1.5" fill="#fff"/></svg>',
+    teams: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="4" fill="#5059C9"/><rect x="4.5" y="8" width="11.5" height="3.2" rx="0.8" fill="#fff"/><rect x="8.6" y="8" width="3.3" height="11" rx="0.8" fill="#fff"/><circle cx="18.2" cy="6.4" r="2.5" fill="#B4B9F5"/></svg>'
+  };
+  function iconImg(name) {
+    var img = document.createElement("img"); img.src = "data:image/svg+xml;utf8," + encodeURIComponent(ICONS[name]); img.alt = ""; img.className = "ticon";
     return img;
   }
   function render() {
@@ -568,7 +573,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         dot.setAttribute("role", "img"); dot.setAttribute("aria-label", dot.title);
         h2.appendChild(dot);
       }
-      if (t.icon === "trello") h2.appendChild(trelloIcon());
+      if (t.icon && ICONS[t.icon]) h2.appendChild(iconImg(t.icon));
       h2.appendChild(document.createTextNode(t.title));
       box.appendChild(h2);
 
@@ -614,6 +619,12 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
             var li = el("li");
             var a = it.url ? el("a") : el("div");
             if (it.url) { a.href = it.url; a.target = "_blank"; a.rel = "noopener noreferrer"; }
+            if (t.kind === "teams" && it.appUrl) {
+              a.addEventListener("click", function (ev) {
+                if (ev.button !== 0 || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) return;   // ctrl/middle-click opens the web link
+                ev.preventDefault(); window.location.href = it.appUrl;   // hands off to the Teams desktop app; no browser tab opens
+              });
+            }
             if (t.kind === "mail" && it.mid) {
               a.style.cursor = "pointer";
               a.addEventListener("click", function (ev) {
