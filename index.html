@@ -58,6 +58,7 @@
   button.x { padding: 2px 8px; line-height: 1.2; color: var(--muted); flex: none; }
   .bar { display: flex; gap: 8px; margin: 2px 0 10px; flex-wrap: wrap; }
   .wide { grid-column: 1 / -1; }
+  button.more { margin-top: 10px; font-size: 13px; padding: 5px 10px; }
   .people { display: flex; flex-wrap: wrap; gap: 12px 26px; margin-top: 6px; }
   .person { min-width: 72px; }
   .pc { font-size: 30px; font-weight: 700; line-height: 1.1; }
@@ -321,7 +322,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   async function loadMail(tile, base, name) {
     var id = await resolveFolder(base, name);
     var f = await gfetch(base + "/mailFolders/" + encodeURIComponent(id) + "?$select=totalItemCount,unreadItemCount");
-    var m = await gfetch(base + "/mailFolders/" + encodeURIComponent(id) + "/messages?$top=5&$select=subject,from,isRead,webLink,receivedDateTime&$orderby=receivedDateTime desc");
+    var m = await gfetch(base + "/mailFolders/" + encodeURIComponent(id) + "/messages?$top=15&$select=subject,from,isRead,webLink,receivedDateTime&$orderby=receivedDateTime desc");
     tile.count = f.totalItemCount;
     tile.items = (m.value || []).map(function (x) {
       var from = x.from && x.from.emailAddress;
@@ -381,7 +382,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     tile.count = events.length;
     tile.remaining = upcoming.length;
     tile.done = events.length - upcoming.length;
-    tile.items = upcoming.length === 0 ? [{ title: "No Upcoming Meetings", meta: "", url: null }] : upcoming.slice(0, 2).map(function (x) {
+    tile.items = upcoming.length === 0 ? [{ title: "No Upcoming Meetings", meta: "", url: null }] : upcoming.map(function (x) {
       var meta = fmtClock(x.s) + " \u2013 " + fmtClock(x.en) + " \u00b7 " + (x.s <= now ? "happening now" : fmtIn(x.s - now));
       var loc = x.e.location && x.e.location.displayName;
       if (loc) meta += " \u00b7 " + loc;
@@ -524,7 +525,9 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         if (t.state === "error") box.appendChild(el("div", "err", t.msg));
         if (t.items && t.items.length) {
           var ul = el("ul");
-          t.items.forEach(function (it) {
+          var LIMIT = (t.kind === "mail" || t.kind === "cal") ? 3 : 1000;
+          var shownItems = (t.expanded || t.items.length <= LIMIT) ? t.items : t.items.slice(0, LIMIT);
+          shownItems.forEach(function (it) {
             var li = el("li");
             var a = it.url ? el("a") : el("div");
             if (it.url) { a.href = it.url; a.target = "_blank"; a.rel = "noopener noreferrer"; }
@@ -540,6 +543,14 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
             ul.appendChild(li);
           });
           box.appendChild(ul);
+          if (t.items.length > LIMIT) {
+            var mb = el("button", "more", t.expanded ? "Show less" : "Show " + (t.items.length - LIMIT) + " more");
+            mb.addEventListener("click", function () { t.expanded = !t.expanded; render(); });
+            box.appendChild(mb);
+            if (t.expanded && t.kind === "mail" && t.count > t.items.length) {
+              box.appendChild(el("div", "note", "Showing the newest " + t.items.length + " of " + t.count + "."));
+            }
+          }
         }
       }
       grid.appendChild(box);
