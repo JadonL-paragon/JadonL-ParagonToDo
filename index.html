@@ -58,6 +58,12 @@
   button.x { padding: 2px 8px; line-height: 1.2; color: var(--muted); flex: none; }
   .bar { display: flex; gap: 8px; margin: 2px 0 10px; flex-wrap: wrap; }
   .wide { grid-column: 1 / -1; }
+  .people { display: flex; flex-wrap: wrap; gap: 12px 26px; margin-top: 6px; }
+  .person { min-width: 72px; }
+  .pc { font-size: 30px; font-weight: 700; line-height: 1.1; }
+  .pc.zero { color: var(--muted); }
+  .pc.some { color: var(--accent); }
+  .pn { font-size: 12.5px; color: var(--muted); }
   #banner { display: none; background: var(--card); border: 1px solid var(--warn); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
   #banner button { margin-top: 8px; }
   #settings { display: none; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
@@ -77,11 +83,12 @@
 <div class="wrap">
   <header>
     <div>
-      <h1>Work Dashboard</h1>
+      <h1 id="appTitle">Work Dashboard</h1>
       <div class="sub" id="status">Starting…</div>
     </div>
     <div class="actions">
       <button id="btnAuth" class="primary" style="display:none">Sign in</button>
+      <button id="btnNotify">Notifications: Off</button>
       <button id="btnSettings">Settings</button>
       <button id="btnRefresh">Refresh</button>
     </div>
@@ -92,23 +99,28 @@
   <section id="settings">
     <p class="hint">Saved in this browser only. Register this exact redirect URI in Entra as a <b>Single-page application</b>: <code id="redirectShown"></code></p>
     <div class="row">
+      <div><label for="sName">Dashboard name</label><input id="sName" type="text" maxlength="40"></div>
+    </div>
+    <div class="row">
       <div><label for="sClient">Application (client) ID</label><input id="sClient" type="text" autocomplete="off" spellcheck="false"></div>
       <div><label for="sTenant">Directory (tenant) ID</label><input id="sTenant" type="text" autocomplete="off" spellcheck="false"></div>
-      <div><label for="sRefresh">Refresh every (seconds)</label><input id="sRefresh" type="number" min="30" max="900"></div>
+      <div><label for="sRefresh">Refresh every (seconds)</label><input id="sRefresh" type="number" min="10" max="900"></div>
     </div>
     <div class="row">
       <div><label for="sShared">Support (shared) mailbox address</label><input id="sShared" type="email" placeholder="shared@yourcompany.com"></div>
       <div><label for="sFolder">Your folder name</label><input id="sFolder" type="text"></div>
+      <div><label for="sPrefix">Team folder prefix</label><input id="sPrefix" type="text" placeholder="Support"></div>
       <div><label for="sFolderIn">Folder lives in</label>
         <select id="sFolderIn"><option value="own">My mailbox</option><option value="shared">The shared mailbox</option></select></div>
     </div>
-    <label>Show the dot / badge when something new arrives in</label>
+    <label>Show the dot, badge and pop-ups when something new arrives in</label>
     <div style="margin-bottom:12px">
       <label class="chk"><input type="checkbox" id="bSupport"> Support inbox</label>
       <label class="chk"><input type="checkbox" id="bFolder"> Support folder</label>
       <label class="chk"><input type="checkbox" id="bPersonal"> Personal inbox</label>
       <label class="chk"><input type="checkbox" id="bTeams"> Teams unread</label>
       <label class="chk"><input type="checkbox" id="bCalendar"> Upcoming meetings</label>
+      <label class="chk"><input type="checkbox" id="bTeam"> Team folders</label>
     </div>
     <button id="btnSave" class="primary">Save &amp; reload</button>
   </section>
@@ -197,12 +209,13 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
 
   // ======== Edit these defaults once, or use the Settings panel in the page ========
   var CONFIG = {
+    name: "Work Dashboard", // shown in the page heading and tab title
     clientId: "",          // Application (client) ID from your Entra app registration
     tenantId: "",          // Directory (tenant) ID
     sharedMailbox: "",     // support mailbox address
     folderName: "",        // your folder name
     folderIn: "own",       // "own" or "shared"
-    refreshSeconds: 60,
+    refreshSeconds: 15,
     titles: { support: "SUPPORT INBOX", folder: "JadonL Support Inbox", personal: "jadonl@goparagon.com" }
   };
   // ================================================================================
@@ -213,14 +226,15 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   var REDIRECT = location.origin + location.pathname.replace(/index\.html$/, "");
 
   var cfg = {
-    clientId: CONFIG.clientId, tenantId: CONFIG.tenantId, shared: CONFIG.sharedMailbox,
+    name: CONFIG.name, clientId: CONFIG.clientId, tenantId: CONFIG.tenantId, shared: CONFIG.sharedMailbox,
     folder: CONFIG.folderName, folderIn: CONFIG.folderIn, refresh: CONFIG.refreshSeconds,
-    badge: { support: true, folder: true, personal: true, teams: true, calendar: false },
-    dismissed: []
+    badge: { support: true, folder: true, personal: true, teams: true, calendar: false, team: false },
+    dismissed: [], notify: false, teamPrefix: "Support"
   };
   var msalApp = null, account = null, me = null;
   var tiles = {}, busy = false, timer = null, needSignIn = false;
   var folderIds = {};
+  var pauseUntil = 0;
 
   // ---------- helpers ----------
   function $(id) { return document.getElementById(id); }
@@ -271,6 +285,10 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     var h = { Authorization: "Bearer " + tok };
     if (headers) Object.keys(headers).forEach(function (k) { h[k] = headers[k]; });
     var res = await fetch(GRAPH + path, { headers: h });
+    if (res.status === 429) {
+      var ra = parseInt(res.headers && res.headers.get ? res.headers.get("Retry-After") : "", 10);
+      pauseUntil = Date.now() + (ra > 0 ? ra : 60) * 1000;
+    }
     if (!res.ok) {
       var msg = "";
       try { msg = (await res.json()).error.message; } catch (e) {}
@@ -307,8 +325,45 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     tile.count = f.totalItemCount;
     tile.items = (m.value || []).map(function (x) {
       var from = x.from && x.from.emailAddress;
-      return { title: (x.isRead === false ? "\u25CF " : "") + (x.subject || "(no subject)"), meta: (from && (from.name || from.address)) || "", url: safeUrl(x.webLink) };
+      var who = (from && (from.name || from.address)) || "";
+      return { id: x.id, note: (who ? who + ": " : "") + (x.subject || "(no subject)"), title: (x.isRead === false ? "\u25CF " : "") + (x.subject || "(no subject)"), meta: who, url: safeUrl(x.webLink) };
     });
+  }
+
+
+  // ---------- everyone else's support folders ----------
+  async function listFolders(base, path) {
+    var out = [], next = base + path;
+    for (var i = 0; i < 3 && next; i++) {
+      var r = await gfetch(next);
+      out = out.concat(r.value || []);
+      next = r["@odata.nextLink"] ? String(r["@odata.nextLink"]).replace(GRAPH, "") : null;
+    }
+    return out;
+  }
+  async function loadTeam(tile) {
+    var prefix = (cfg.teamPrefix || "Support").trim(), lp = prefix.toLowerCase(), mine = (cfg.folder || "").trim().toLowerCase();
+    var bases = cfg.shared.trim() ? [sharedBase(), "/me"] : ["/me"], found = [], lastErr = null;
+    for (var i = 0; i < bases.length && !found.length; i++) {
+      var folders = [];
+      var paths = ["/mailFolders?$top=100&$select=id,displayName,totalItemCount", "/mailFolders/inbox/childFolders?$top=100&$select=id,displayName,totalItemCount"];
+      for (var j = 0; j < paths.length; j++) {
+        try { folders = folders.concat(await listFolders(bases[i], paths[j])); } catch (e) { lastErr = e; }
+      }
+      var seen = {};
+      folders.forEach(function (f) {
+        var n = String(f.displayName || ""), ln = n.toLowerCase();
+        if (!ln.startsWith(lp) || ln === lp || ln === mine || seen[f.id]) return;
+        seen[f.id] = true;
+        var label = n.slice(prefix.length).replace(/^[\s\-\u2013\u2014_:]+/, "") || n;
+        found.push({ name: label, count: f.totalItemCount || 0 });
+      });
+    }
+    if (!found.length && lastErr) throw lastErr;
+    found.sort(function (a, b) { return a.name.localeCompare(b.name); });
+    tile.people = found;
+    tile.count = found.reduce(function (s, p) { return s + p.count; }, 0);
+    tile.items = [];
   }
 
   // ---------- calendar ----------
@@ -360,6 +415,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         when: lp.createdDateTime,
         title: name + (c.topic ? " \u00b7 " + c.topic : ""),
         meta: htmlToText(lp.body && lp.body.content).slice(0, 140),
+        note: name + ": " + htmlToText(lp.body && lp.body.content).slice(0, 80),
         url: safeUrl(c.webUrl)
       });
     });
@@ -394,6 +450,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         },
         run: function (t) { return loadMail(t, cfg.folderIn === "shared" ? sharedBase() : "/me", cfg.folder.trim()); } },
       personal: { title: CONFIG.titles.personal, kind: "mail", run: function (t) { return loadMail(t, "/me", "inbox"); } },
+      team: { title: "Team support folders", kind: "team", wide: true, run: loadTeam },
       teams: { title: "Teams \u00b7 unread", kind: "teams", wide: true, run: loadTeams }
     };
     Object.keys(tiles).forEach(function (k) { tiles[k].state = "idle"; tiles[k].items = []; });
@@ -445,6 +502,18 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
             [[t.remaining, "upcoming", (t.remaining === 0 ? "zero" : "some")], [t.done, "done", "green"]].forEach(function (pr) {
               var blk = el("div"); blk.appendChild(el("div", "count " + pr[2], String(pr[0]))); blk.appendChild(el("div", "note", pr[1])); c.appendChild(blk);
             });
+          } else if (t.kind === "team") {
+            if (t.people && t.people.length) {
+              c = el("div", "people");
+              t.people.forEach(function (p) {
+                var b = el("div", "person");
+                b.appendChild(el("div", "pc " + (p.count === 0 ? "zero" : "some"), String(p.count)));
+                b.appendChild(el("div", "pn", p.name));
+                c.appendChild(b);
+              });
+            } else {
+              c = el("div", "note", "No folders starting with \u201c" + (cfg.teamPrefix || "Support") + "\u201d were found.");
+            }
           } else {
             c = el("div", "count " + (t.count === 0 ? "zero" : "some"), String(t.count));
           }
@@ -511,13 +580,35 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       $("favicon").href = c.toDataURL("image/png");
     } catch (e) { /* canvas unavailable */ }
   }
+  var notified = {}, seenIds = {};
+  function notifyOn() { return !!cfg.notify && typeof Notification !== "undefined" && Notification.permission === "granted"; }
+  function sendNote(k, diff, now) {
+    try {
+      var tl = tiles[k], seen = seenIds[k] || {};
+      var fresh = (tl.items || []).filter(function (it) { return it.id && !seen[it.id]; }).slice(0, 2);
+      var body = fresh.length ? fresh.map(function (it) { return it.note || it.title; }).join("\n") : "Now " + now + " in total.";
+      var n = new Notification(tl.title + " \u00b7 " + diff + " new", { body: body, tag: "dash-" + k, icon: "icon-192.png" });
+      n.onclick = function () { try { window.focus(); n.close(); } catch (e) {} };
+    } catch (e) { /* notifications unavailable */ }
+  }
+  function updateSeen() {
+    Object.keys(tiles).forEach(function (k) {
+      var tl = tiles[k]; if (!tl.items) return;
+      var s = {}; tl.items.forEach(function (it) { if (it.id) s[it.id] = true; }); seenIds[k] = s;
+    });
+  }
   function updateIndicators() {
     var c = curCounts(), focused = true;
     try { focused = document.hasFocus(); } catch (e) {}
-    Object.keys(c).forEach(function (k) { if (base[k] == null || c[k] < base[k] || focused) base[k] = c[k]; });
+    Object.keys(c).forEach(function (k) {
+      if (notified[k] == null || c[k] < notified[k] || focused) notified[k] = c[k];
+      else if (c[k] > notified[k]) { var d = c[k] - notified[k]; notified[k] = c[k]; if (notifyOn()) sendNote(k, d, c[k]); }
+      if (base[k] == null || c[k] < base[k] || focused) base[k] = c[k];
+    });
+    updateSeen();
     var n = newTotal();
     var state = needSignIn || n > 0 ? "dot" : "none";
-    document.title = (needSignIn ? "(!) " : (n > 0 ? "(" + n + ") " : "")) + "Work Dashboard";
+    document.title = (needSignIn ? "(!) " : (n > 0 ? "(" + n + ") " : "")) + cfg.name;
     drawFavicon(state);
     try {
       if (navigator.setAppBadge) { if (n > 0 && !needSignIn) navigator.setAppBadge(n).catch(function () {}); else navigator.clearAppBadge().catch(function () {}); }
@@ -533,6 +624,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   function signIn() { msalApp.loginRedirect({ scopes: SCOPES }); }
   async function refresh() {
     if (busy || !msalApp) return;
+    if (Date.now() < pauseUntil) { $("status").textContent = "Microsoft asked us to slow down; resuming in " + Math.ceil((pauseUntil - Date.now()) / 1000) + "s"; return; }
     if (!account) { needSignIn = true; updateIndicators(); return; }
     busy = true; needSignIn = false; $("btnRefresh").disabled = true; $("status").textContent = "Refreshing\u2026";
     var keys = Object.keys(tiles);
@@ -557,25 +649,43 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   }
   function startTimer() {
     if (timer) clearInterval(timer);
-    timer = setInterval(refresh, Math.max(30, Number(cfg.refresh) || 60) * 1000);
+    timer = setInterval(refresh, Math.max(10, Number(cfg.refresh) || 15) * 1000);
   }
 
   // ---------- settings UI ----------
   function fillSettings() {
     $("redirectShown").textContent = REDIRECT;
-    $("sClient").value = cfg.clientId; $("sTenant").value = cfg.tenantId; $("sRefresh").value = cfg.refresh;
+    $("sName").value = cfg.name; $("sClient").value = cfg.clientId; $("sTenant").value = cfg.tenantId; $("sRefresh").value = cfg.refresh;
     $("sShared").value = cfg.shared; $("sFolder").value = cfg.folder; $("sFolderIn").value = cfg.folderIn;
     $("bSupport").checked = cfg.badge.support; $("bFolder").checked = cfg.badge.folder; $("bPersonal").checked = cfg.badge.personal;
-    $("bTeams").checked = cfg.badge.teams; $("bCalendar").checked = cfg.badge.calendar;
+    $("bTeams").checked = cfg.badge.teams; $("bCalendar").checked = cfg.badge.calendar; $("bTeam").checked = cfg.badge.team; $("sPrefix").value = cfg.teamPrefix;
+  }
+  function syncNotifyBtn() {
+    var b = $("btnNotify"), on = notifyOn();
+    b.textContent = "Notifications: " + (on ? "On" : "Off");
+    b.className = on ? "primary" : "";
   }
   function wireUi() {
+    $("btnNotify").addEventListener("click", async function () {
+      if (notifyOn()) { cfg.notify = false; saveCfg(); syncNotifyBtn(); return; }
+      if (typeof Notification === "undefined") { showBanner("This browser doesn\u2019t support desktop notifications."); return; }
+      var p = Notification.permission;
+      if (p === "default") { try { p = await Notification.requestPermission(); } catch (e) {} }
+      if (p === "granted") {
+        cfg.notify = true; saveCfg(); syncNotifyBtn();
+        try { new Notification("Notifications are on", { body: "You\u2019ll get a pop-up when something new arrives while you\u2019re away from this page.", icon: "icon-192.png" }); } catch (e) {}
+      } else {
+        cfg.notify = false; saveCfg(); syncNotifyBtn();
+        showBanner("Notifications are blocked for this site. Allow them from the site settings icon next to the address bar, then press the button again.");
+      }
+    });
     $("btnSettings").addEventListener("click", function () { $("settings").classList.toggle("open"); });
     $("btnRefresh").addEventListener("click", refresh);
     $("btnSave").addEventListener("click", function () {
-      cfg.clientId = $("sClient").value.trim(); cfg.tenantId = $("sTenant").value.trim();
-      var r = parseInt($("sRefresh").value, 10); cfg.refresh = r >= 30 && r <= 900 ? r : 60;
+      cfg.name = $("sName").value.trim() || "Work Dashboard"; cfg.clientId = $("sClient").value.trim(); cfg.tenantId = $("sTenant").value.trim();
+      var r = parseInt($("sRefresh").value, 10); cfg.refresh = r >= 10 && r <= 900 ? r : 15; cfg.teamPrefix = $("sPrefix").value.trim() || "Support";
       cfg.shared = $("sShared").value.trim(); cfg.folder = $("sFolder").value.trim(); cfg.folderIn = $("sFolderIn").value;
-      cfg.badge = { support: $("bSupport").checked, folder: $("bFolder").checked, personal: $("bPersonal").checked, teams: $("bTeams").checked, calendar: $("bCalendar").checked };
+      cfg.badge = { support: $("bSupport").checked, folder: $("bFolder").checked, personal: $("bPersonal").checked, teams: $("bTeams").checked, calendar: $("bCalendar").checked, team: $("bTeam").checked };
       saveCfg(); location.reload();
     });
     $("btnAuth").addEventListener("click", function () {
@@ -584,7 +694,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   }
 
   async function init() {
-    loadCfg(); defineTiles(); fillSettings(); wireUi(); render(); drawFavicon("none");
+    loadCfg(); $("appTitle").textContent = cfg.name; document.title = cfg.name; defineTiles(); fillSettings(); wireUi(); syncNotifyBtn(); render(); drawFavicon("none");
     if (location.protocol === "file:") {
       showBanner("This page has to be served over https (or http://localhost) for Microsoft sign-in to work. It can\u2019t run from a file on disk.");
       $("status").textContent = "Not signed in"; return;
