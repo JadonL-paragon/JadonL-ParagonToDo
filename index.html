@@ -32,7 +32,7 @@
   button:hover { border-color: var(--accent); }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   button:disabled { opacity: .55; cursor: default; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
   .tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
   .tile h2 { font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--muted); margin: 0 0 6px; }
   .tile h2.caps { text-transform: uppercase; letter-spacing: .04em; }
@@ -57,7 +57,10 @@
   .m { color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
   button.x { padding: 2px 8px; line-height: 1.2; color: var(--muted); flex: none; }
   .bar { display: flex; gap: 8px; margin: 2px 0 10px; flex-wrap: wrap; }
-  .wide { grid-column: 1 / -1; }
+  .tile { grid-column: span 2; }
+  .tile.half { grid-column: span 3; }
+  .tile.wide { grid-column: 1 / -1; }
+  @media (max-width: 760px) { .tile, .tile.half, .tile.wide { grid-column: 1 / -1; } }
   button.more { margin-top: 10px; font-size: 13px; padding: 5px 10px; }
   .people { display: flex; flex-wrap: wrap; gap: 12px 26px; margin-top: 6px; }
   .person { min-width: 72px; }
@@ -401,6 +404,8 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       var title = (card && card.name) || (board && board.name) || "Trello notification";
       var meta = (who ? who + " " : "") + verb + (card && board ? " \u00b7 " + board.name : "");
       var link = card && card.shortLink ? "https://trello.com/c/" + card.shortLink : (board && board.shortLink ? "https://trello.com/b/" + board.shortLink : null);
+      // For mentions and comments, jump straight to that comment on the card.
+      if (link && card && card.shortLink && (n.type === "mentionedOnCard" || n.type === "commentCard") && /^[0-9a-f]{24}$/i.test(n.idAction || "")) link += "#comment-" + n.idAction;
       var snippet = typeof d.text === "string" ? d.text.replace(/\s+/g, " ").trim().slice(0, 80) : "";
       return { id: n.id, title: title, meta: meta, note: (who ? who + " " : "") + verb + ": " + title + (snippet ? " \u2014 " + snippet : ""), url: safeUrl(link) };
     });
@@ -491,11 +496,14 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         run: function (t) { return loadMail(t, cfg.folderIn === "shared" ? sharedBase() : "/me", cfg.folder.trim()); } },
       personal: { title: CONFIG.titles.personal, kind: "mail", run: function (t) { return loadMail(t, "/me", "inbox"); } },
       team: { title: "Team support folders", kind: "team", wide: true, run: loadTeam },
-      teams: { title: "Teams \u00b7 unread", kind: "teams", wide: true, run: loadTeams },
-      trello: { title: "Trello \u00b7 unread", kind: "trello", wide: true,
+      teams: { title: "Teams \u00b7 unread", kind: "teams", half: true, run: loadTeams },
+      trello: { title: "Trello \u00b7 unread", kind: "trello", half: true,
         need: function () { return (cfg.trelloKey.trim() && cfg.trelloToken.trim()) ? null : "Add your Trello API key and token in Settings."; },
         run: loadTrello }
     };
+    var order = ["teams", "trello", "support", "folder", "personal", "team", "calendar"], ordered = {};
+    order.forEach(function (k) { ordered[k] = tiles[k]; });
+    tiles = ordered;
     Object.keys(tiles).forEach(function (k) { tiles[k].state = "idle"; tiles[k].items = []; });
   }
 
@@ -503,7 +511,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     var grid = $("grid"); grid.textContent = "";
     Object.keys(tiles).forEach(function (k) {
       var t = tiles[k];
-      var box = el("div", "tile" + (t.wide ? " wide" : ""));
+      var box = el("div", "tile" + (t.wide ? " wide" : "") + (t.half ? " half" : ""));
       var h2 = el("h2", t.caps ? "caps" : "");
       var todo = t.kind === "cal" ? t.remaining : t.count;
       if (t.state !== "need" && todo != null) {
