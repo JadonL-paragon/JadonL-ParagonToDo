@@ -38,6 +38,12 @@
   .tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
   .tile h2 { font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--muted); margin: 0 0 6px; }
   .tile h2.caps { text-transform: uppercase; letter-spacing: .04em; }
+  :root { --row: 55px; }
+  .tile.col { display: flex; flex-direction: column; }
+  .fillwrap { position: relative; flex: 1; min-height: 150px; margin-top: 12px; }
+  ul.fillul { position: absolute; inset: 0; overflow-y: auto; margin: 0; }
+  ul.scroll2 { max-height: calc(var(--row) * 2); overflow-y: auto; }
+  ul.fillul, ul.scroll2 { scrollbar-width: thin; padding-right: 6px; }
   .ticon { width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; border-radius: 3px; }
   .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
   .dot.green { background: var(--good); }
@@ -492,7 +498,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   }
   async function loadTeams(tile) {
     if (!me) me = await gfetch("/me?$select=id,displayName,mail");
-    var base = "/me/chats?$top=20&$expand=lastMessagePreview";
+    var base = "/me/chats?$top=50&$expand=lastMessagePreview";
     var r;
     try { r = await gfetch(base + "&$orderby=" + encodeURIComponent("lastMessagePreview/createdDateTime desc")); }
     catch (e) { if (e && e.status === 400) r = await gfetch(base); else throw e; }
@@ -502,7 +508,8 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       if (!lp || lp.isDeleted || vp.isHidden) return;
       if (lp.messageType && lp.messageType !== "message") return;
       var u = lp.from && lp.from.user;
-      var name = (u && u.id === me.id) ? "You" : ((u && u.displayName) || "Someone");
+      if (u && u.id === me.id) return;   // only messages you received
+      var name = (u && u.displayName) || "Someone";
       var text = htmlToText(lp.body && lp.body.content) || "(attachment or non-text message)";
       out.push({
         id: c.id + "|" + lp.createdDateTime, when: lp.createdDateTime,
@@ -512,7 +519,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       });
     });
     out.sort(function (x, y) { return String(y.when).localeCompare(String(x.when)); });
-    tile.items = out.slice(0, 5);
+    tile.items = out.slice(0, 10);
     tile.loaded = true;
   }
 
@@ -552,7 +559,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     var grid = $("grid"); grid.textContent = "";
     Object.keys(tiles).forEach(function (k) {
       var t = tiles[k];
-      var box = el("div", "tile" + (t.wide ? " wide" : "") + (t.half ? " half" : ""));
+      var box = el("div", "tile" + (t.wide ? " wide" : "") + (t.half ? " half" : "") + (t.kind === "teams" ? " col" : ""));
       var h2 = el("h2", t.caps ? "caps" : "");
       var todo = t.kind === "cal" ? t.remaining : t.count;
       if (t.state !== "need" && todo != null) {
@@ -598,10 +605,10 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
           else if (t.kind === "mail" && t.count === 0) box.appendChild(el("div", "note", "No emails in this folder."));
         }
         if (t.state === "error") box.appendChild(el("div", "err", t.msg));
-        if (t.kind === "teams" && t.loaded && (!t.items || !t.items.length)) box.appendChild(el("div", "note", "No recent chat messages."));
+        if (t.kind === "teams" && t.loaded && (!t.items || !t.items.length)) box.appendChild(el("div", "note", "No recent messages from others."));
         if (t.items && t.items.length) {
           var ul = el("ul");
-          var LIMIT = (t.kind === "mail" || t.kind === "cal" || t.kind === "trello") ? 3 : 1000;
+          var LIMIT = (t.kind === "mail" || t.kind === "cal") ? 3 : 1000;
           var shownItems = (t.expanded || t.items.length <= LIMIT) ? t.items : t.items.slice(0, LIMIT);
           shownItems.forEach(function (it) {
             var li = el("li");
@@ -619,7 +626,12 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
             li.appendChild(a);
             ul.appendChild(li);
           });
-          box.appendChild(ul);
+          if (t.kind === "trello") {
+            ul.className = "scroll2"; box.appendChild(ul);
+            if (t.items.length > 2) box.appendChild(el("div", "note", "Scroll for " + (t.items.length - 2) + " more."));
+          } else if (t.kind === "teams") {
+            var fw = el("div", "fillwrap"); ul.className = "fillul"; fw.appendChild(ul); box.appendChild(fw);
+          } else box.appendChild(ul);
           if (t.items.length > LIMIT) {
             var mb = el("button", "more", t.expanded ? "Show less" : "Show " + (t.items.length - LIMIT) + " more");
             mb.addEventListener("click", function () { t.expanded = !t.expanded; render(); });
