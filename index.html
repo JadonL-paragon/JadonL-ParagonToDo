@@ -66,8 +66,9 @@
   ul.fillul { position: absolute; inset: 0; overflow-y: auto; margin: 0; }
   ul.scroll2 { max-height: calc(var(--row) * 2); overflow-y: auto; }
   ul.scroll3 { max-height: calc(var(--row) * 3.35); overflow-y: auto; }   /* the extra third of a row peeks out so you can tell there is more */
-  ul.scroll10, ul.scroll3, ul.scroll2 { scrollbar-width: thin; scrollbar-color: transparent transparent; padding-right: 6px; }
-  ul.scroll10:hover, ul.scroll3:hover, ul.scroll2:hover { scrollbar-color: var(--muted) transparent; }
+  ul.scroll5 { max-height: calc(var(--row) * 5.35); overflow-y: auto; }
+  ul.scroll10, ul.scroll5, ul.scroll3, ul.scroll2 { scrollbar-width: thin; scrollbar-color: transparent transparent; padding-right: 6px; }
+  ul.scroll10:hover, ul.scroll5:hover, ul.scroll3:hover, ul.scroll2:hover { scrollbar-color: var(--muted) transparent; }
   .ticon { width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; border-radius: 3px; }
   .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
   .dot.green { background: var(--good); }
@@ -742,7 +743,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       li.appendChild(a);
       ul.appendChild(li);
     });
-    ul.className = "scroll3";   // about three rows tall; the rest scrolls, with the scrollbar hidden until you hover
+    ul.className = t.kind === "teams" ? "scroll5" : "scroll3";   // about three rows tall (five for Teams); the rest scrolls, with the scrollbar hidden until you hover
     if (!ul.querySelector("a[href]")) { ul.tabIndex = 0; ul.setAttribute("aria-label", t.title + " list"); }   // keyboard users can focus it and scroll with the arrow keys
     return ul;
   }
