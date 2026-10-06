@@ -55,8 +55,9 @@
   .fillwrap { position: relative; flex: 1; min-height: 420px; margin-top: 12px; }
   ul.fillul { position: absolute; inset: 0; overflow-y: auto; margin: 0; }
   ul.scroll2 { max-height: calc(var(--row) * 2); overflow-y: auto; }
-  ul.scroll10, ul.scroll2 { scrollbar-width: thin; scrollbar-color: transparent transparent; padding-right: 6px; }
-  ul.scroll10:hover, ul.scroll2:hover { scrollbar-color: var(--muted) transparent; }
+  ul.scroll3 { max-height: calc(var(--row) * 3.35); overflow-y: auto; }   /* the extra third of a row peeks out so you can tell there is more */
+  ul.scroll10, ul.scroll3, ul.scroll2 { scrollbar-width: thin; scrollbar-color: transparent transparent; padding-right: 6px; }
+  ul.scroll10:hover, ul.scroll3:hover, ul.scroll2:hover { scrollbar-color: var(--muted) transparent; }
   .ticon { width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; border-radius: 3px; }
   .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
   .dot.green { background: var(--good); }
@@ -667,15 +668,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       }
       if (t.icon && ICONS[t.icon]) h2.appendChild(iconImg(t.icon));
       h2.appendChild(document.createTextNode(t.title));
-      if (t.kind === "teams") {
-        var head = el("div", "thead"); head.appendChild(h2);
-        if (t.items && t.items.length > 3) {
-          var tb = el("button", "more", t.expanded ? "Show less" : "Show more");
-          tb.addEventListener("click", function () { t.expanded = !t.expanded; render(); });
-          head.appendChild(tb);
-        }
-        box.appendChild(head);
-      } else box.appendChild(h2);
+      box.appendChild(h2);
 
       if (t.state === "loading" && t.count == null && !t.loaded) {
         var l = el("div", "note"); l.appendChild(el("span", "spin")); l.appendChild(document.createTextNode("Loading\u2026")); box.appendChild(l);
@@ -723,9 +716,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         if (t.kind === "teams" && t.loaded && (!t.items || !t.items.length)) box.appendChild(el("div", "note", "No recent messages from others."));
         if (t.items && t.items.length && t.kind !== "trello") {
           var ul = el("ul");
-          var LIMIT = (t.kind === "mail" || t.kind === "cal" || t.kind === "teams") ? 3 : 1000;
-          var shownItems = (t.expanded || t.items.length <= LIMIT) ? t.items : t.items.slice(0, LIMIT);
-          shownItems.forEach(function (it) {
+          t.items.forEach(function (it) {
             var li = el("li");
             var a = it.url ? el("a") : el("div");
             if (it.url) { a.href = it.url; a.target = "_blank"; a.rel = "noopener noreferrer"; }
@@ -747,21 +738,9 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
             li.appendChild(a);
             ul.appendChild(li);
           });
-          if (t.kind === "trello") {
-            ul.className = "scroll2"; box.appendChild(ul);
-            if (t.items.length > 2) box.appendChild(el("div", "note", "Scroll for " + (t.items.length - 2) + " more."));
-          } else if (t.kind === "teams") {
-            if (t.expanded) ul.className = "scroll10";
-            box.appendChild(ul);
-          } else box.appendChild(ul);
-          if (t.items.length > LIMIT && t.kind !== "teams") {
-            var mb = el("button", "more", t.expanded ? "Show less" : "Show " + (t.items.length - LIMIT) + " more");
-            mb.addEventListener("click", function () { t.expanded = !t.expanded; render(); });
-            box.appendChild(mb);
-            if (t.expanded && t.kind === "mail" && t.count > t.items.length) {
-              box.appendChild(el("div", "note", "Showing the newest " + t.items.length + " of " + t.count + "."));
-            }
-          }
+          ul.className = "scroll3";   // about three rows tall; the rest scrolls, with the scrollbar hidden until you hover
+          box.appendChild(ul);
+          if (t.kind === "mail" && t.count > t.items.length) box.appendChild(el("div", "note", "Showing the newest " + t.items.length + " of " + t.count + "."));
         }
       }
       grid.appendChild(box);
