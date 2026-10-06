@@ -34,7 +34,7 @@
   button:hover { border-color: var(--accent); }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   button:disabled { opacity: .55; cursor: default; }
-  .grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 14px; }
   .tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
   .tile h2 { font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--muted); margin: 0 0 6px; }
   .tile h2.caps { text-transform: uppercase; letter-spacing: .04em; }
@@ -42,7 +42,7 @@
   .tile.compact { padding: 12px 16px; --row: 51px; }
   .tile.compact h2 { margin-bottom: 4px; }
   .tile.compact .count { font-size: 32px; }
-  .tile.compact .stats { gap: 24px; }
+  .tile.compact .stats { gap: 4px 20px; flex-wrap: wrap; }
   .tile.compact .stats > div { display: flex; align-items: baseline; gap: 6px; }
   .tile.compact .stats .note { margin-top: 0; }
   .tile.compact ul { margin-top: 8px; }
@@ -79,9 +79,16 @@
   .m { color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
   button.x { padding: 2px 8px; line-height: 1.2; color: var(--muted); flex: none; }
   .bar { display: flex; gap: 8px; margin: 2px 0 10px; flex-wrap: wrap; }
-  .tile { grid-column: span 2; }
-  .tile.half { grid-column: span 3; }
+  .tile { grid-column: span 5; }
+  .tile.half { grid-column: span 5; }
+  .tile.fifth { grid-column: span 2; }
+  .tile.fourfifths { grid-column: span 8; }
   .tile.wide { grid-column: 1 / -1; }
+  .statbtn { background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; text-align: left; }
+  .statbtn:hover .count, .statbtn:hover .note { text-decoration: underline; }
+  .tile.compact .stats > .statbtn { display: flex; align-items: baseline; gap: 6px; }
+  .tlbody { overflow-y: auto; max-height: 70vh; margin-top: 8px; padding-right: 4px; }
+  .tlbody ul { margin-top: 0; }
   .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px; }
   .overlay[hidden], #toast[hidden] { display: none; }
   .panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; width: min(900px, 100%); max-height: 94vh; display: flex; flex-direction: column; padding: 16px; }
@@ -98,7 +105,8 @@
   .pb iframe { width: 100%; height: 56vh; border: 0; border-radius: 8px; background: #fff; display: block; }
   #toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; z-index: 60; box-shadow: 0 6px 24px rgba(0,0,0,.35); font-size: 14px; }
   #toast button { margin-left: 10px; padding: 3px 10px; }
-  @media (max-width: 760px) { .tile, .tile.wide { grid-column: 1 / -1; } .tile.half { grid-column: span 3; } }
+  @media (max-width: 900px) { .tile.fifth, .tile.fourfifths { grid-column: 1 / -1; } }
+  @media (max-width: 760px) { .tile, .tile.wide { grid-column: 1 / -1; } .tile.half { grid-column: span 5; } }
   @media (max-width: 520px) { .tile.half { grid-column: 1 / -1; } }
   button.more { margin-top: 10px; font-size: 13px; padding: 5px 10px; }
   .people { display: flex; flex-wrap: wrap; gap: 12px 26px; margin-top: 6px; }
@@ -195,6 +203,15 @@
     </div>
     <div id="rdStatus" class="rst"></div>
     <div id="rdBody" class="pb"></div>
+  </div>
+</div>
+<div id="tlpanel" class="overlay" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="tlTitle">
+    <div class="ph">
+      <div id="tlTitle" class="rs">Trello · unread</div>
+      <button id="tlClose" class="x" aria-label="Close">✕</button>
+    </div>
+    <div id="tlBody" class="tlbody"></div>
   </div>
 </div>
 <div id="toast" hidden></div>
@@ -602,24 +619,24 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   function defineTiles() {
     tiles = {
       calendar: { title: "Meetings today", kind: "cal", half: true, compact: true, run: loadCal },
-      support: { title: CONFIG.titles.support, kind: "mail", caps: true,
+      support: { title: CONFIG.titles.support, kind: "mail", caps: true, half: true, compact: true,
         need: function () { return cfg.shared.trim() ? null : "Add the support mailbox address in Settings."; },
         run: function (t) { return loadMail(t, sharedBase(), "inbox"); } },
-      folder: { title: CONFIG.titles.folder, kind: "mail",
+      folder: { title: CONFIG.titles.folder, kind: "mail", half: true,
         need: function () {
           if (!cfg.folder.trim()) return "Add your folder name in Settings.";
           if (cfg.folderIn === "shared" && !cfg.shared.trim()) return "This folder is set to the shared mailbox, which needs an address in Settings.";
           return null;
         },
         run: function (t) { return loadMail(t, cfg.folderIn === "shared" ? sharedBase() : "/me", cfg.folder.trim()); } },
-      personal: { title: CONFIG.titles.personal, kind: "mail", run: function (t) { return loadMail(t, "/me", "inbox"); } },
-      team: { title: "Team support folders", kind: "team", wide: true, run: loadTeam },
+      personal: { title: CONFIG.titles.personal, kind: "mail", half: true, run: function (t) { return loadMail(t, "/me", "inbox"); } },
+      team: { title: "Team support folders", kind: "team", fourfifths: true, run: loadTeam },
       teams: { title: "Teams \u00b7 recent messages", kind: "teams", wide: true, icon: "teams", run: loadTeams },
-      trello: { title: "Trello \u00b7 unread", kind: "trello", half: true, compact: true, icon: "trello",
+      trello: { title: "Trello \u00b7 unread", kind: "trello", fifth: true, compact: true, icon: "trello",
         need: function () { return (cfg.trelloKey.trim() && cfg.trelloToken.trim()) ? null : "Add your Trello API key and token in Settings."; },
         run: loadTrello }
     };
-    var order = ["calendar", "trello", "support", "folder", "personal", "team", "teams"], ordered = {};
+    var order = ["support", "calendar", "folder", "personal", "trello", "team", "teams"], ordered = {};
     order.forEach(function (k) { ordered[k] = tiles[k]; });
     tiles = ordered;
     Object.keys(tiles).forEach(function (k) { tiles[k].state = "idle"; tiles[k].items = []; });
@@ -639,7 +656,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     var grid = $("grid"); grid.textContent = "";
     Object.keys(tiles).forEach(function (k) {
       var t = tiles[k];
-      var box = el("div", "tile" + (t.wide ? " wide" : "") + (t.half ? " half" : "") + (t.compact ? " compact" : ""));
+      var box = el("div", "tile" + (t.wide ? " wide" : "") + (t.half ? " half" : "") + (t.fifth ? " fifth" : "") + (t.fourfifths ? " fourfifths" : "") + (t.compact ? " compact" : ""));
       var h2 = el("h2", t.caps ? "caps" : "");
       var todo = t.kind === "cal" ? t.remaining : t.count;
       if (t.state !== "need" && todo != null) {
@@ -675,7 +692,11 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
           } else if (t.kind === "trello") {
             c = el("div", "stats");
             [[String(t.count) + (t.capped && t.count > 0 ? "+" : ""), "unread", t.count === 0 ? "zero" : "some"], [t.cards == null ? "\u2013" : String(t.cards), "my cards", t.cards ? "some" : "zero"]].forEach(function (pr) {
-              var blk = el("div"); blk.appendChild(el("div", "count " + pr[2], pr[0])); blk.appendChild(el("div", "note", pr[1])); c.appendChild(blk);
+              var clickable = pr[1] === "unread" && t.count > 0;
+              var blk = el(clickable ? "button" : "div", clickable ? "statbtn" : "");
+              blk.appendChild(el("div", "count " + pr[2], pr[0])); blk.appendChild(el("div", "note", pr[1]));
+              if (clickable) { blk.title = "View unread notifications"; blk.setAttribute("aria-label", "View " + t.count + " unread Trello notifications"); blk.addEventListener("click", openTrelloPanel); }
+              c.appendChild(blk);
             });
           } else if (t.kind === "team") {
             if (t.people && t.people.length) {
@@ -700,7 +721,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         if (t.kind === "trello" && t.cardsErr) box.appendChild(el("div", "err", "Card count unavailable: " + t.cardsErr));
         if (t.state === "error") box.appendChild(el("div", "err", t.msg));
         if (t.kind === "teams" && t.loaded && (!t.items || !t.items.length)) box.appendChild(el("div", "note", "No recent messages from others."));
-        if (t.items && t.items.length) {
+        if (t.items && t.items.length && t.kind !== "trello") {
           var ul = el("ul");
           var LIMIT = (t.kind === "mail" || t.kind === "cal" || t.kind === "teams") ? 3 : 1000;
           var shownItems = (t.expanded || t.items.length <= LIMIT) ? t.items : t.items.slice(0, LIMIT);
@@ -745,6 +766,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       }
       grid.appendChild(box);
     });
+    if (!$("tlpanel").hidden) fillTrelloPanel();
   }
 
   // ---------- notification indicators: favicon dot, title count, app badge ----------
@@ -984,7 +1006,25 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       else $("rdStatus").textContent = errText(e);
     }
   }
+  function fillTrelloPanel() {
+    var body = $("tlBody"), tl = tiles.trello; body.textContent = "";
+    var items = (tl && tl.items) || [];
+    if (!items.length) { body.appendChild(el("div", "note", "No unread notifications.")); return; }
+    var ul = el("ul");
+    items.forEach(function (it) {
+      var li = el("li"), a = it.url ? el("a") : el("div");
+      if (it.url) { a.href = it.url; a.target = "_blank"; a.rel = "noopener noreferrer"; }
+      a.appendChild(el("span", "s", it.title)); if (it.meta) a.appendChild(el("span", "m", it.meta));
+      li.appendChild(a); ul.appendChild(li);
+    });
+    body.appendChild(ul);
+  }
+  function openTrelloPanel() { fillTrelloPanel(); $("tlpanel").hidden = false; }
+  function closeTrelloPanel() { $("tlpanel").hidden = true; }
   function wireReader() {
+    $("tlClose").addEventListener("click", closeTrelloPanel);
+    $("tlpanel").addEventListener("click", function (ev) { if (ev.target === $("tlpanel")) closeTrelloPanel(); });
+    document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !$("tlpanel").hidden) closeTrelloPanel(); });
     $("rdClose").addEventListener("click", closeReader);
     $("reader").addEventListener("click", function (ev) { if (ev.target === $("reader")) closeReader(); });
     document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !$("reader").hidden) closeReader(); });
