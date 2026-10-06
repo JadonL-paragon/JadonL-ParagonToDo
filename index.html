@@ -111,6 +111,17 @@
   button.person { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; border-radius: 6px; }
   button.person:hover .pn { text-decoration: underline; color: var(--text); }
   button.person:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .ctag { display: inline-block; max-width: 58%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; margin-right: 2px;
+    font: 600 11.5px/1.5 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace; color: var(--text);
+    background: var(--bg); background: color-mix(in srgb, var(--accent) 20%, transparent); border: 1px solid var(--line); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    border-radius: 5px; padding: 0 6px; }
+  .hright { display: flex; align-items: center; gap: 10px; }
+  .histbtn { display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px 3px 9px; border-radius: 999px; font-size: 12.5px; font-weight: 600; }
+  .histbtn svg { color: var(--accent); }
+  #vlSearch { width: 100%; margin-top: 8px; }
+  #vlSearch[hidden] { display: none; }
+  .vread.logmode .rlabel, .vread.logmode #rdChips, .vread.logmode #rdDelete { display: none; }
+  .vcust { font-weight: 600; }
   .vsplit { display: flex; flex-direction: column; flex: 1; min-height: 0; }
   .rpanel.split { width: min(1240px, 100%); height: min(92vh, 880px); }
   .rpanel.split .vsplit { flex-direction: row; gap: 14px; }
@@ -205,7 +216,7 @@
   .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 12px; }
   label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 4px; }
   label.chk { display: inline-flex; align-items: center; gap: 6px; margin-right: 14px; color: var(--text); font-size: 13.5px; }
-  input[type=text], input[type=email], input[type=number], input[type=password], select { width: 100%; font: inherit; color: var(--text); background: var(--bg);
+  input[type=text], input[type=email], input[type=number], input[type=password], input[type=search], select { width: 100%; font: inherit; color: var(--text); background: var(--bg);
     border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; }
   .hint { color: var(--muted); font-size: 12.5px; margin: 0 0 12px; }
   code { background: var(--bg); border: 1px solid var(--line); padding: 1px 5px; border-radius: 5px; font-size: 12.5px; word-break: break-all; }
@@ -279,6 +290,11 @@
     <div class="row">
       <div style="grid-column: 1 / -1"><label for="sImgAllow">Always show remote images from these senders (domains or addresses, comma separated)</label><input id="sImgAllow" type="text" placeholder="e.g. premiermetals.com, goparagon.com" autocomplete="off" spellcheck="false"></div>
     </div>
+    <div class="row">
+      <div><label for="sLogSite">Support log: SharePoint site</label><input id="sLogSite" type="text" autocomplete="off" spellcheck="false" placeholder="yourcompany.sharepoint.com/sites/YourSite"></div>
+      <div><label for="sLogFolder">…and its folder (in the Documents library)</label><input id="sLogFolder" type="text" autocomplete="off" spellcheck="false" placeholder="Support Log"></div>
+    </div>
+    <p class="hint">The History button on the Support Inbox tile lists the emails saved in that folder. The first time, it asks for permission to read SharePoint files.</p>
     <p class="hint">Pictures built into an email always show. Pictures fetched from the internet can tell the sender when you opened the message, so only list senders you trust. A sender\u2019s address can be forged, so a domain you list is only as safe as your mail filtering.</p>
     <p class="hint">The Trello key and token are stored in this browser only. The tile shows the open cards in that list for each board you name; a board only appears if it has a list with that name.</p>
     <label>Show the dot, badge and pop-ups when something new arrives in</label>
@@ -298,7 +314,7 @@
   <div class="panel rpanel" role="dialog" aria-modal="true" aria-label="Email">
     <div class="vsplit">
       <aside id="vlist" class="vlist" hidden aria-label="Emails in this folder">
-        <div class="vlhead"><div id="vlTitle" class="vlt"></div><div id="vlSub" class="vls"></div></div>
+        <div class="vlhead"><div id="vlTitle" class="vlt"></div><div id="vlSub" class="vls"></div><input id="vlSearch" type="search" placeholder="Search the log…" aria-label="Search the support log" autocomplete="off" hidden></div>
         <div id="vlBody" class="vlbody" tabindex="-1"></div>
       </aside>
       <section id="vread" class="vread">
@@ -428,6 +444,8 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     folderName: "",        // your folder name
     folderIn: "own",       // "own" or "shared"
     refreshSeconds: 10,
+    logSite: "paragoncomputing.sharepoint.com/sites/ParadigmSupport",   // SharePoint site that holds the support log
+    logFolder: "Support Log",   // folder (in the site\u2019s Documents library) with the saved .eml emails
     trelloAssignList: "To Be Assigned",   // Trello list whose open cards are counted on the Trello tile
     trelloAssignBoards: "Paradigm ERP Specialists, Paradigm ERP Add Ons",   // only these boards (blank in Settings = every board that has the list)
     titles: { support: "Support Inbox", folder: "JadonL Support Inbox", personal: "My Inbox" }
@@ -435,6 +453,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   // ================================================================================
 
   var SCOPES = ["User.Read", "Mail.Read", "Mail.Read.Shared", "Calendars.Read", "Chat.Read"];
+  var SP_SCOPES = ["Sites.Read.All"];   // only asked for when you open the support log history
   var WRITE_SCOPES = ["Mail.ReadWrite", "Mail.ReadWrite.Shared"];   // only asked for when you delete or move mail
   var STORE = "work-dashboard-standalone-v1";
   var GRAPH = "https://graph.microsoft.com/v1.0";
@@ -444,7 +463,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     name: CONFIG.name, clientId: CONFIG.clientId, tenantId: CONFIG.tenantId, shared: CONFIG.sharedMailbox,
     folder: CONFIG.folderName, folderIn: CONFIG.folderIn, refresh: CONFIG.refreshSeconds,
     badge: { support: true, folder: true, personal: true, teams: true, calendar: false, team: false, trello: true },
-    dismissed: [], notify: false, teamPrefix: "Support", trelloKey: "", trelloToken: "", trelloAssignList: CONFIG.trelloAssignList, trelloAssignBoards: CONFIG.trelloAssignBoards, imageAllow: ""
+    dismissed: [], notify: false, teamPrefix: "Support", trelloKey: "", trelloToken: "", trelloAssignList: CONFIG.trelloAssignList, trelloAssignBoards: CONFIG.trelloAssignBoards, imageAllow: "", logSite: CONFIG.logSite, logFolder: CONFIG.logFolder
   };
   var msalApp = null, account = null, me = null;
   var tiles = {}, busy = false, timer = null, needSignIn = false;
@@ -484,7 +503,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   }
   var tokCache = {}, tokInflight = {};
   async function getToken(scopes) {
-    var write = scopes === WRITE_SCOPES, key = write ? "w" : "r";
+    var write = scopes === WRITE_SCOPES, sp = scopes === SP_SCOPES, key = write ? "w" : (sp ? "s" : "r");
     var hit = tokCache[key];
     if (hit && hit.exp > Date.now() + 120000) return hit.token;      // reuse until two minutes before expiry
     if (tokInflight[key]) return tokInflight[key];                     // simultaneous requests share one lookup
@@ -497,6 +516,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         var code = (e && e.errorCode) || "";
         if (/interaction_required|login_required|consent_required|no_account|token_renewal|monitor_window|empty_window/.test(code) || (msal.InteractionRequiredAuthError && e instanceof msal.InteractionRequiredAuthError)) {
           if (write) { var we = new Error("Email actions need your permission first."); we.writeConsent = true; throw we; }
+          if (sp) { var se = new Error("Reading the support log needs your permission first."); se.needScopes = SP_SCOPES; throw se; }
           needSignIn = true;
           var err = new Error("Sign-in needed."); err.status = 401; throw err;
         }
@@ -748,7 +768,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       var text = htmlToText(m.text) || "(attachment or non-text message)";
       out.push({
         id: c.id + "|" + m.when, when: m.when,
-        title: (c.topic ? "[" + c.topic + "] " : "") + (m.name || "Someone"),   // group chats lead with the chat name in brackets
+        title: (m.name || "Someone"), tag: c.topic || "",   // group chats lead with the chat name as a code-style chip
         meta: fmtAgo(new Date(m.when)) + " \u00b7 " + text.slice(0, 140),
         url: safeUrl(c.webUrl),
         appUrl: /^https:\/\/teams\.microsoft\.com\/l\//i.test(c.webUrl || "") ? String(c.webUrl).replace(/^https:\/\//i, "msteams://") : null
@@ -764,7 +784,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   function defineTiles() {
     tiles = {
       calendar: { title: "Meetings Today", kind: "cal", half: true, compact: true, run: loadCal },
-      support: { title: CONFIG.titles.support, kind: "mail", half: true, compact: true,
+      support: { title: CONFIG.titles.support, kind: "mail", half: true, compact: true, history: true,
         need: function () { return cfg.shared.trim() ? null : "Add the support mailbox address in Settings."; },
         run: function (t) { return loadMail(t, sharedBase(), "inbox"); } },
       folder: { title: CONFIG.titles.folder, kind: "mail", half: true,
@@ -797,6 +817,12 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     else img.src = "data:image/svg+xml;utf8," + encodeURIComponent(ICONS[name]);
     return img;
   }
+  function historyIcon() {
+    var ns = "http://www.w3.org/2000/svg", s = document.createElementNS(ns, "svg"), c = document.createElementNS(ns, "circle"), p = document.createElementNS(ns, "polyline");
+    s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("width", "14"); s.setAttribute("height", "14"); s.setAttribute("fill", "none"); s.setAttribute("stroke", "currentColor"); s.setAttribute("stroke-width", "2.2"); s.setAttribute("stroke-linecap", "round"); s.setAttribute("stroke-linejoin", "round"); s.setAttribute("aria-hidden", "true");
+    c.setAttribute("cx", "12"); c.setAttribute("cy", "12"); c.setAttribute("r", "10"); p.setAttribute("points", "12 6 12 12 16 14");
+    s.appendChild(c); s.appendChild(p); return s;
+  }
   function calStats(t) {
     var c = el("div", "hstats");
     [[t.remaining, "upcoming", (t.remaining === 0 ? "zero" : "some")], [t.done, "done", "green"]].forEach(function (pr) {
@@ -827,7 +853,10 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
           } else openMessage(it);
         });
       }
-      a.appendChild(el("span", "s", it.title));
+      var sline = el("span", "s");
+      if (it.tag) { sline.appendChild(el("span", "ctag", it.tag)); sline.appendChild(document.createTextNode(" ")); }
+      sline.appendChild(document.createTextNode(it.title));
+      a.appendChild(sline);
       if (it.meta) a.appendChild(el("span", "m", it.meta));
       li.appendChild(a);
       ul.appendChild(li);
@@ -853,6 +882,14 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     h2.appendChild(document.createTextNode(t.title));
     head.appendChild(h2);
     var firstLoad = t.state === "loading" && t.count == null && !t.loaded;
+    var right = el("div", "hright");
+    if (t.history) {
+      var hb = el("button", "histbtn"); hb.type = "button"; hb.dataset.fid = "hist-" + k;
+      hb.title = "Open the support log: emails saved in SharePoint"; hb.setAttribute("aria-label", "Open support log history");
+      hb.appendChild(historyIcon()); hb.appendChild(document.createTextNode("History"));
+      hb.addEventListener("click", function () { openLog("hist-" + k); });
+      right.appendChild(hb);
+    }
     if (!firstLoad && t.state !== "need" && t.count != null) {
       // the headline number sits in the title row, which saves a whole line of height per tile
       if (t.kind === "mail") {
@@ -863,10 +900,11 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
           cb.setAttribute("aria-label", "View " + t.count + " emails in " + t.title);
           cb.addEventListener("click", function () { openFolder({ base: t.folderRef.base, id: t.folderRef.id, full: t.title, name: t.title, count: t.count, focusKey: "tile-" + k }); });
         }
-        head.appendChild(cb);
+        right.appendChild(cb);
       }
-      else if (t.kind === "cal") head.appendChild(calStats(t));
+      else if (t.kind === "cal") right.appendChild(calStats(t));
     }
+    if (right.childNodes.length) head.appendChild(right);
     box.appendChild(head);
 
     if (firstLoad) {
@@ -929,7 +967,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     var t = tiles[k];
     var st = (t.state === "loading" && (t.count != null || t.loaded)) ? "ok" : t.state;   // "refreshing" looks the same as "ok" when data is already showing
     return JSON.stringify([st, t.msg, t.count, t.remaining, t.done, t.capped, t.assign, t.assignErr, t.loaded, t.people, k === "team" ? cfg.teamPrefix : 0,
-      t.items && t.items.map(function (i) { return [i.id, i.title, i.meta, i.url]; })]);
+      t.items && t.items.map(function (i) { return [i.id, i.title, i.tag, i.meta, i.url]; })]);
   }
   function render() {
     var grid = $("grid"), keys = Object.keys(tiles);
@@ -1070,6 +1108,120 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   }
 
 
+  // ---- MIME parser (begin) ----
+  // Reads a saved .eml file (raw email) into the same shape Microsoft Graph uses for a message, so the existing viewer can show it.
+  function binStr(bytes) { var s = "", CH = 0x4000; for (var i = 0; i < bytes.length; i += CH) s += String.fromCharCode.apply(null, bytes.subarray(i, i + CH)); return s; }
+  function strBytes(s) { var u = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) u[i] = s.charCodeAt(i) & 255; return u; }
+  function decodeCharset(bin, cs) {
+    var bytes = strBytes(bin);
+    try { return new TextDecoder(String(cs || "utf-8").toLowerCase()).decode(bytes); } catch (e) { return new TextDecoder("utf-8").decode(bytes); }
+  }
+  function decodeQP(s) { return s.replace(/=\r?\n/g, "").replace(/=([0-9A-Fa-f]{2})/g, function (all, h) { return String.fromCharCode(parseInt(h, 16)); }); }
+  function decodeCTE(body, cte) {
+    if (cte === "base64") { try { return atob(body.replace(/[^A-Za-z0-9+\/=]/g, "")); } catch (e) { return ""; } }
+    if (cte === "quoted-printable") return decodeQP(body);
+    return body;
+  }
+  function decodeWords(s) {
+    return String(s || "").replace(/(=\?[^?]+\?[bBqQ]\?[^?]*\?=)\s+(?==\?[^?]+\?[bBqQ]\?)/g, "$1").replace(/=\?([^?]+)\?([bBqQ])\?([^?]*)\?=/g, function (all, cs, enc, txt) {
+      try {
+        var bin = enc.toUpperCase() === "B" ? atob(txt) : decodeQP(txt.replace(/_/g, " "));
+        return decodeCharset(bin, cs.split("*")[0]);
+      } catch (e) { return all; }
+    });
+  }
+  function splitMsg(raw) {
+    var m = /\r?\n\r?\n/.exec(raw), head, body;
+    if (!m) { head = raw; body = ""; } else { head = raw.slice(0, m.index); body = raw.slice(m.index + m[0].length); }
+    var h = {};
+    head.replace(/\r?\n[ \t]+/g, " ").split(/\r?\n/).forEach(function (ln) {
+      var i = ln.indexOf(":");
+      if (i > 0) { var k = ln.slice(0, i).trim().toLowerCase(); if (!(k in h)) h[k] = ln.slice(i + 1).trim(); }
+    });
+    return { h: h, body: body };
+  }
+  function ctParse(v) {
+    var str = String(v || ""), semi = str.indexOf(";"), type = (semi < 0 ? str : str.slice(0, semi)).trim().toLowerCase(), p = {}, re = /;\s*([\w*.-]+)\s*=\s*(?:"([^"]*)"|([^;]*))/g, m;
+    var rest = semi < 0 ? "" : str.slice(semi);
+    while ((m = re.exec(rest))) p[m[1].toLowerCase()] = (m[2] !== undefined ? m[2] : (m[3] || "")).trim();
+    return { type: type, p: p };
+  }
+  function attName(disp, ct) {
+    var n = disp.p["filename*"] || ct.p["name*"];
+    if (n) { var mm = /^([^']*)'[^']*'(.*)$/.exec(n); try { return mm ? decodeCharsetUri(mm[2], mm[1]) : decodeURIComponent(n); } catch (e) { /* fall through */ } }
+    return decodeWords(disp.p.filename || ct.p.name || "");
+  }
+  function decodeCharsetUri(s, cs) {
+    var bin = s.replace(/%([0-9A-Fa-f]{2})/g, function (all, h) { return String.fromCharCode(parseInt(h, 16)); });
+    return decodeCharset(bin, cs || "utf-8");
+  }
+  function addrList(s) {
+    var parts = [], cur = "", q = false, ang = 0;
+    s = String(s || "");
+    for (var i = 0; i < s.length; i++) {
+      var c = s[i];
+      if (c === '"' && s[i - 1] !== "\\") q = !q;
+      if (!q) { if (c === "<") ang++; if (c === ">") ang--; }
+      if (c === "," && !q && ang <= 0) { parts.push(cur); cur = ""; } else cur += c;
+    }
+    if (cur.trim()) parts.push(cur);
+    return parts.map(function (x) {
+      x = x.trim();
+      var m = /^(.*?)\s*<([^>]*)>\s*$/.exec(x);
+      if (m) return { name: decodeWords(m[1].replace(/^"|"$/g, "").replace(/\\(.)/g, "$1")).trim(), address: m[2].trim() };
+      if (/@/.test(x)) return { name: "", address: x.replace(/[<>]/g, "").trim() };
+      return { name: decodeWords(x), address: "" };
+    }).filter(function (a) { return a.name || a.address; });
+  }
+  function esc2(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+  function walkPart(raw, out) {
+    var s = splitMsg(raw), ct = ctParse(s.h["content-type"] || "text/plain"), cte = String(s.h["content-transfer-encoding"] || "7bit").trim().toLowerCase(), disp = ctParse(s.h["content-disposition"] || "");
+    if (ct.type.indexOf("multipart/") === 0 && ct.p.boundary) {
+      var segs = ("\n" + s.body).split(new RegExp("\\r?\\n--" + esc2(ct.p.boundary)));
+      for (var i = 1; i < segs.length; i++) {
+        var seg = segs[i];
+        if (seg.slice(0, 2) === "--") break;                     // closing boundary
+        walkPart(seg.replace(/^[ \t]*\r?\n/, ""), out);
+      }
+      return;
+    }
+    if ((ct.type === "text/plain" || ct.type === "text/html" || !s.h["content-type"]) && disp.type !== "attachment") {
+      var text = decodeCharset(decodeCTE(s.body, cte), ct.p.charset);
+      if (ct.type === "text/html") { if (out.html === null) out.html = text; } else if (out.text === null) out.text = text;
+      return;
+    }
+    var cid = String(s.h["content-id"] || "").replace(/^\s*<|>\s*$/g, "");
+    var size = cte === "base64" ? Math.floor(s.body.replace(/\s/g, "").length * 3 / 4) : s.body.length;
+    var att = { name: attName(disp, ct) || cid || "attachment", type: ct.type, cid: cid, size: size, inline: disp.type === "inline" || (!!cid && disp.type !== "attachment") };
+    if (/^image\/(png|jpe?g|gif|bmp|webp)$/.test(ct.type) && cid && size <= 2097152) { try { att.data = btoa(decodeCTE(s.body, cte)); } catch (e) { /* skip */ } }
+    out.atts.push(att);
+  }
+  function parseEml(bytes) {
+    var raw = binStr(bytes), top = splitMsg(raw), out = { html: null, text: null, atts: [] };
+    walkPart(raw, out);
+    var html = out.html;
+    if (html) {
+      out.atts.forEach(function (a) {
+        if (a.data && a.cid) html = html.replace(new RegExp("cid:" + esc2(a.cid), "gi"), "data:" + a.type + ";base64," + a.data);
+      });
+    }
+    var from = addrList(top.h.from)[0] || { name: "", address: "" };
+    function wrap(a) { return { emailAddress: a }; }
+    var d = new Date(top.h.date || ""), real = out.atts.filter(function (a) { return !(a.inline && a.cid); });
+    return {
+      html: html,
+      msg: {
+        subject: decodeWords(top.h.subject || ""),
+        from: { emailAddress: from },
+        toRecipients: addrList(top.h.to).map(wrap), ccRecipients: addrList(top.h.cc).map(wrap),
+        receivedDateTime: isNaN(d) ? "" : d.toISOString(),
+        hasAttachments: real.length > 0, attachNames: real.map(function (a) { return a.name; }),
+        body: html ? { contentType: "html", content: html } : { contentType: "text", content: out.text || "" }
+      }
+    };
+  }
+  // ---- MIME parser (end) ----
+
   // ---------- reading, deleting and moving mail ----------
   var cur = null, destCache = {}, toastTimer = null;
   function escapeHtml(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
@@ -1155,7 +1307,8 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     var to = recips(m.toRecipients), cc = recips(m.ccRecipients), lines = [];
     if (to) lines.push("To: " + to);
     if (cc) lines.push("Cc: " + cc);
-    if (m.hasAttachments) lines.push("\u{1F4CE} Has attachments \u2014 open in Outlook to see them.");
+    if (m.attachNames && m.attachNames.length) lines.push("\u{1F4CE} " + m.attachNames.join(", ") + " \u2014 open in SharePoint to download");
+    else if (m.hasAttachments) lines.push("\u{1F4CE} Has attachments \u2014 open in Outlook to see them.");
     $("rdTo").textContent = lines.join("\n");
     renderBody();
   }
@@ -1199,7 +1352,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     $("vread").classList.remove("empty");
     $("rdSubject").textContent = it.subject || "(no subject)"; $("rdName").textContent = "Loading\u2026"; $("rdAddr").textContent = ""; $("rdTo").textContent = ""; $("rdDate").textContent = ""; $("rdAvatar").textContent = "";
     $("rdBody").textContent = ""; $("rdStatus").textContent = ""; $("rdImgBar").hidden = true; $("rdChips").textContent = ""; setActions(false);
-    var open = $("rdOpen"); if (it.url) { open.href = it.url; open.style.display = ""; } else open.style.display = "none";
+    var open = $("rdOpen"); open.textContent = "Open in Outlook"; if (it.url) { open.href = it.url; open.style.display = ""; } else open.style.display = "none";
     try {
       var m = await gfetch(it.base + "/messages/" + encodeURIComponent(it.mid) + "?$select=subject,from,toRecipients,ccRecipients,receivedDateTime,body,hasAttachments,isRead,parentFolderId");
       if (!cur || cur.it !== it) return;
@@ -1223,8 +1376,9 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     try { await moveMessage(base, newId, origFolder); showToast("Restored."); refresh(); }
     catch (e) { showToast("Couldn\u2019t undo: " + errText(e)); }
   }
-  async function grantWrite() {
-    try { await msalApp.acquireTokenPopup({ scopes: WRITE_SCOPES, account: account }); }
+  async function grantWrite() { return grantScopes(WRITE_SCOPES); }
+  async function grantScopes(scopes) {
+    try { await msalApp.acquireTokenPopup({ scopes: scopes, account: account }); }
     catch (e) { throw new Error("Couldn\u2019t get permission: " + ((e && (e.errorMessage || e.message)) || e)); }
   }
   function showConsent(retry) {
@@ -1272,7 +1426,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   function setSplit(on) {
     $("reader").querySelector(".rpanel").classList.toggle("split", on);
     $("vlist").hidden = !on;
-    if (!on) $("vread").classList.remove("empty");
+    if (!on) { $("vread").classList.remove("empty"); $("vread").classList.remove("logmode"); $("vlSearch").hidden = true; }
   }
   function mailTime(d) {
     var now = new Date(), sod = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -1303,21 +1457,49 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     fp.sel = it.mid;
     $("vlBody").querySelectorAll(".vrow.sel").forEach(function (r) { r.classList.remove("sel"); r.removeAttribute("aria-current"); });
     row.classList.add("sel"); row.setAttribute("aria-current", "true");
-    openMessage(it, true);
+    if (fp.mode === "log") openLogItem(it); else openMessage(it, true);
+  }
+  function logGroup(d) {
+    var now = new Date(), same = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+    if (same) return "Today";
+    return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric", year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined });
+  }
+  function dateRange(items) {   // "Sep 3 \u2013 Oct 6, 2026", or one date when they are all on the same day
+    var lo = Infinity, hi = -Infinity;
+    items.forEach(function (x) { var v = x.when.getTime(); if (v < lo) lo = v; if (v > hi) hi = v; });
+    var a = new Date(lo), b = new Date(hi), yr = { year: "numeric" }, md = { month: "short", day: "numeric" };
+    if (a.toDateString() === b.toDateString()) return b.toLocaleDateString([], Object.assign({}, md, yr));
+    if (a.getFullYear() === b.getFullYear()) return a.toLocaleDateString([], md) + " \u2013 " + b.toLocaleDateString([], Object.assign({}, md, yr));
+    return a.toLocaleDateString([], Object.assign({}, md, yr)) + " \u2013 " + b.toLocaleDateString([], Object.assign({}, md, yr));
+  }
+  function logSubtitle(list) {
+    var q = String(fp.q || "").trim(), n = list.length;
+    if (fp.loading) return "Loading\u2026";
+    if (!q) return fp.items.length + " email" + (fp.items.length === 1 ? "" : "s") + (fp.next ? " loaded \u00b7 more available" : "");
+    var head = n === 0 ? "No matches" : n + " match" + (n === 1 ? "" : "es") + " \u00b7 " + dateRange(list);
+    if (fp.searching) return head + " \u00b7 searching older emails\u2026";
+    return head + " \u00b7 searched " + (fp.next ? "the newest " : "all ") + fp.items.length;
   }
   function fillFolderPanel() {
     var f = fp.folder, body = $("vlBody"); if (!f) return;
     var keep = body.scrollTop; body.textContent = "";
     var cur2 = ((tiles.team && tiles.team.people) || []).filter(function (p) { return p.id === f.id && p.base === f.base; })[0];
     if (cur2) f.count = cur2.count;
+    var isLog = fp.mode === "log", list = isLog ? logView() : fp.items;
     var count = typeof f.count === "number" ? f.count : fp.items.length;
     $("vlTitle").textContent = f.full || f.name;
-    $("vlSub").textContent = fp.loading ? "Loading\u2026" : count + " email" + (count === 1 ? "" : "s");
+    if (isLog) $("vlSub").textContent = logSubtitle(list);
+    else $("vlSub").textContent = fp.loading ? "Loading\u2026" : count + " email" + (count === 1 ? "" : "s");
     if (fp.err) body.appendChild(el("div", "err", fp.err));
-    if (!fp.loading && !fp.err && !fp.items.length) body.appendChild(el("div", "note", "No emails in this folder."));
+    if (isLog && fp.needConsent) {
+      var cn = el("div", "note", "Opening the support log needs one extra permission (read SharePoint files). "), cbn = el("button", "primary", "Allow");
+      cbn.addEventListener("click", async function () { try { await grantScopes(SP_SCOPES); loadLog(false); } catch (e) { fp.needConsent = false; fp.err = e.message; fillFolderPanel(); } });
+      cn.appendChild(cbn); body.appendChild(cn);
+    }
+    if (!fp.loading && !fp.err && !fp.needConsent && !list.length) body.appendChild(el("div", "note", isLog && fp.q ? "No emails match that search." : "No emails in this folder."));
     var lastGroup = "";
-    fp.items.forEach(function (it) {
-      var g = groupLabel(it.when); if (g !== lastGroup) { body.appendChild(el("div", "vgroup", g)); lastGroup = g; }
+    list.forEach(function (it) {
+      var g = isLog ? logGroup(it.when) : groupLabel(it.when); if (g !== lastGroup) { body.appendChild(el("div", "vgroup", g)); lastGroup = g; }
       var unread = it.isRead === false, row = el("button", "vrow" + (unread ? " unread" : "") + (fp.sel === it.mid ? " sel" : "")); row.type = "button";
       row.dataset.mid = it.mid; if (fp.sel === it.mid) row.setAttribute("aria-current", "true");
       var av = el("div", "vav", (it.sender.replace(/[^A-Za-z0-9]/g, "").charAt(0) || "?").toUpperCase()); av.setAttribute("aria-hidden", "true");
@@ -1325,11 +1507,17 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       l1.appendChild(el("span", "vsender", it.sender)); l1.appendChild(el("span", "vtime", mailTime(it.when)));
       l2.appendChild(el("span", "vsubj", it.subject)); if (it.hasAtt) l2.appendChild(clipIcon());
       main.appendChild(l1); main.appendChild(l2); if (it.preview) main.appendChild(el("div", "vprev", it.preview));
+      if (it.logged) main.appendChild(el("div", "vprev vlogged", it.logged));
       row.appendChild(av); row.appendChild(main);
       row.addEventListener("click", function () { selectRow(it, row); });
       body.appendChild(row);
     });
-    if (count > fp.items.length && fp.items.length) body.appendChild(el("div", "note", "Showing the newest " + fp.items.length + " of " + count + ".", ));
+    if (!isLog && count > fp.items.length && fp.items.length) body.appendChild(el("div", "note", "Showing the newest " + fp.items.length + " of " + count + "."));
+    if (isLog && fp.next && !fp.loading && !fp.searching) {
+      var more = el("button", "", "Load older emails"); more.type = "button"; more.style.margin = "10px 8px";
+      more.addEventListener("click", function () { more.disabled = true; loadLog(true); });
+      body.appendChild(more);
+    }
     body.scrollTop = keep;
   }
   async function loadFolder(silent) {
@@ -1352,20 +1540,116 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   }
   function openFolder(p, sel) {
     lastFocus = document.activeElement; lastFocusFid = p.focusKey || p.id || "";
-    fp = { open: true, folder: p, items: [], err: null, loading: true, seq: fp.seq, sel: null };
-    setSplit(true); showEmptyReading(); fillFolderPanel();
+    fp = { open: true, folder: p, items: [], err: null, loading: true, seq: fp.seq, sel: null, mode: "mail" };
+    setSplit(true); $("vread").classList.remove("logmode"); $("vlSearch").hidden = true; showEmptyReading(); fillFolderPanel();
     $("reader").hidden = false; $("vlBody").focus();
     if (sel) { fp.sel = sel.mid; openMessage(sel, true); }   // the email you clicked opens straight away; its row highlights once the list arrives
     loadFolder(false);
   }
-  function reloadFolder() { if (fp.open) loadFolder(true); }
+  function reloadFolder() { if (fp.open && fp.mode !== "log") loadFolder(true); }
   function folderItemGone(it) {
     if (!fp.open) return;
     fp.items = fp.items.filter(function (x) { return x.mid !== it.mid; });
     if (fp.folder && typeof fp.folder.count === "number" && fp.folder.count > 0) fp.folder.count--;
     fillFolderPanel();
   }
+
+  // ---------- support log history: emails saved as .eml files in a SharePoint folder ----------
+  var logDriveCache = null;
+  async function logDriveId() {
+    var site = String(cfg.logSite || "").trim().replace(/^https?:\/\//i, "").replace(/\/+$/, ""), i = site.indexOf("/");
+    if (logDriveCache && logDriveCache.key === site) return logDriveCache.id;
+    if (i < 0) throw new Error("Set the SharePoint site in Settings, for example paragoncomputing.sharepoint.com/sites/ParadigmSupport.");
+    var s = await gfetch("/sites/" + site.slice(0, i) + ":" + site.slice(i) + "?$select=id", null, { scopes: SP_SCOPES });
+    var d = await gfetch("/sites/" + s.id + "/drive?$select=id", null, { scopes: SP_SCOPES });
+    logDriveCache = { key: site, id: d.id };
+    return d.id;
+  }
+  function guessFrom(name) { var m = /^([\w.+'-]+@[\w.-]+\.[A-Za-z]{2,})-/.exec(name); return m ? m[1] : ""; }
+  function guessSubject(name) {
+    var m = /^[\w.+'-]+@[\w.-]+\.[A-Za-z]{2,}-(.*)-\d{4}-\d{2}-\d{2}T[\d_]+Z\.eml$/i.exec(name);
+    return (m ? m[1] : name.replace(/\.eml$/i, "")).replace(/^(RE|FW|FWD)_ /i, function (all, p) { return p.toUpperCase() + ": "; });
+  }
+  function logItem(x) {
+    var f = (x.listItem && x.listItem.fields) || {}, name = x.name || "";
+    var sender = String(f.EmailFrom || f.From || guessFrom(name) || ""), to = String(f.EmailTo || "");
+    var cust = typeof f.Customer === "string" ? f.Customer : ((f.Customer && (f.Customer.Value || f.Customer.LookupValue)) || "");
+    var by = (x.createdBy && x.createdBy.user && x.createdBy.user.displayName) || "", subject = String(f.Title || guessSubject(name));
+    var preview = [cust, to && "To: " + to].filter(Boolean).join(" \u00b7 "), logged = by ? "Logged by " + by : "";
+    return { id: x.id, mid: x.id, dl: x["@microsoft.graph.downloadUrl"] || "", name: name, subject: subject, title: subject, sender: sender || "Unknown sender", preview: preview, logged: logged,
+      when: new Date(x.createdDateTime || 0), isRead: true, hasAtt: false, url: safeUrl(x.webUrl),
+      hay: [name, subject, sender, to, cust, by].join(" ").toLowerCase() };
+  }
+  function logView() {
+    var q = String(fp.q || "").trim().toLowerCase();
+    return q ? fp.items.filter(function (it) { return it.hay.indexOf(q) >= 0; }) : fp.items;
+  }
+  async function loadLog(more) {
+    var seq = ++fp.seq;
+    if (!more) { fp.loading = true; fp.err = null; fp.needConsent = false; }
+    fillFolderPanel();
+    try {
+      var id = await logDriveId(), folder = String(cfg.logFolder || "").trim().replace(/^\/+|\/+$/g, "");
+      var path = (more && fp.next) ? String(fp.next).replace(GRAPH, "") : "/drives/" + id + "/root" + (folder ? ":/" + encodeURI(folder) + ":" : "") + "/children?$top=100&$expand=listItem($expand=fields)&$orderby=createdDateTime desc";
+      var r;
+      try { r = await gfetch(path, null, { scopes: SP_SCOPES }); }
+      catch (e) { if (!more && e && e.status === 400) r = await gfetch(path.replace("&$orderby=createdDateTime desc", ""), null, { scopes: SP_SCOPES }); else throw e; }
+      if (seq !== fp.seq || !fp.open) return;
+      var add = (r.value || []).filter(function (x) { return x.file; }).map(logItem);
+      fp.items = (more ? fp.items.concat(add) : add).sort(function (a, b) { return b.when - a.when; });
+      fp.next = r["@odata.nextLink"] || null;
+    } catch (e) {
+      if (seq !== fp.seq || !fp.open) return;
+      if (e && e.needScopes) fp.needConsent = true;
+      else if (e && e.status === 404) fp.err = "Couldn\u2019t find the folder \u201c" + (cfg.logFolder || "") + "\u201d on that SharePoint site. Check the site and folder names in Settings.";
+      else fp.err = errText(e);
+    }
+    fp.loading = false; fillFolderPanel();
+  }
+  var LOG_SEARCH_CAP = 1000;
+  async function searchAll() {
+    if (fp.pagingAll) return;
+    fp.pagingAll = true; fp.searching = !!fp.next; fillFolderPanel();
+    try {
+      var guard = 0;   // safety net: never more than 30 pages in one search
+      while (guard++ < 30 && fp.open && fp.mode === "log" && String(fp.q || "").trim() && fp.next && fp.items.length < LOG_SEARCH_CAP && !fp.err && !fp.needConsent) await loadLog(true);
+    } finally { fp.pagingAll = false; fp.searching = false; if (fp.open) fillFolderPanel(); }
+  }
+  function openLog(focusKey) {
+    lastFocus = document.activeElement; lastFocusFid = focusKey || "";
+    fp = { open: true, folder: { full: "Support Log", name: "Support Log" }, items: [], err: null, loading: true, seq: fp.seq, sel: null, mode: "log", next: null, q: "", needConsent: false };
+    setSplit(true); showEmptyReading(); $("vread").classList.add("logmode");
+    var s = $("vlSearch"); s.hidden = false; s.value = "";
+    fillFolderPanel(); $("reader").hidden = false; s.focus();
+    loadLog(false);
+  }
+  async function fetchEml(it) {
+    if (it.dl) { try { var r = await fetch(it.dl); if (r.ok) return new Uint8Array(await r.arrayBuffer()); } catch (e) { /* fall back to the Graph route */ } }
+    var id = await logDriveId(), tok = await getToken(SP_SCOPES);
+    var r2 = await fetch(GRAPH + "/drives/" + id + "/items/" + encodeURIComponent(it.mid) + "/content", { headers: { Authorization: "Bearer " + tok } });
+    if (!r2.ok) { var er = new Error("Couldn\u2019t download this email file (" + r2.status + ")."); er.status = r2.status; throw er; }
+    return new Uint8Array(await r2.arrayBuffer());
+  }
+  async function openLogItem(it) {
+    cur = { it: it, msg: null, images: false, inList: true, log: true };
+    $("vread").classList.remove("empty");
+    $("rdSubject").textContent = it.subject || "(no subject)"; $("rdName").textContent = "Loading\u2026"; $("rdAddr").textContent = ""; $("rdTo").textContent = ""; $("rdDate").textContent = ""; $("rdAvatar").textContent = "";
+    $("rdBody").textContent = ""; $("rdStatus").textContent = ""; $("rdImgBar").hidden = true; $("rdChips").textContent = "";
+    var open = $("rdOpen"); open.textContent = "Open in SharePoint"; if (it.url) { open.href = it.url; open.style.display = ""; } else open.style.display = "none";
+    try {
+      var parsed = parseEml(await fetchEml(it));
+      if (!cur || cur.it !== it) return;
+      cur.msg = parsed.msg; cur.html = parsed.html; renderMessage();
+    } catch (e) {
+      if (!cur || cur.it !== it) return;
+      $("rdName").textContent = "";
+      $("rdStatus").textContent = (e && e.needScopes ? "Reading the support log needs permission. Close this and press History again." : ((e && e.message) || "Couldn\u2019t read this email file.") + (it.url ? " Use \u201cOpen in SharePoint\u201d to view it there." : ""));
+    }
+  }
   function wireReader() {
+    var sT = null;
+    $("vlSearch").addEventListener("input", function () { clearTimeout(sT); sT = setTimeout(function () { fp.q = $("vlSearch").value; fillFolderPanel(); if (fp.mode === "log" && fp.q.trim()) searchAll(); }, 120); });
+    $("vlSearch").addEventListener("keydown", function (ev) { if (ev.key === "ArrowDown") { var r = $("vlBody").querySelector(".vrow"); if (r) { ev.preventDefault(); r.focus(); } } });
     $("vlBody").addEventListener("keydown", function (ev) {   // up/down arrows step through the list like in Outlook
       if (ev.key !== "ArrowDown" && ev.key !== "ArrowUp") return;
       var rows = [].slice.call($("vlBody").querySelectorAll(".vrow")), i = rows.indexOf(document.activeElement), n;
@@ -1398,7 +1682,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     $("sName").value = cfg.name; $("sClient").value = cfg.clientId; $("sTenant").value = cfg.tenantId; $("sRefresh").value = cfg.refresh;
     $("sShared").value = cfg.shared; $("sFolder").value = cfg.folder; $("sFolderIn").value = cfg.folderIn;
     $("bSupport").checked = cfg.badge.support; $("bFolder").checked = cfg.badge.folder; $("bPersonal").checked = cfg.badge.personal;
-    $("bCalendar").checked = cfg.badge.calendar; $("bTeam").checked = cfg.badge.team; $("bTrello").checked = cfg.badge.trello; $("sTrelloKey").value = cfg.trelloKey; $("sTrelloToken").value = cfg.trelloToken; $("sTrelloList").value = cfg.trelloAssignList; $("sTrelloBoards").value = cfg.trelloAssignBoards; $("sImgAllow").value = cfg.imageAllow; $("sPrefix").value = cfg.teamPrefix;
+    $("bCalendar").checked = cfg.badge.calendar; $("bTeam").checked = cfg.badge.team; $("bTrello").checked = cfg.badge.trello; $("sTrelloKey").value = cfg.trelloKey; $("sTrelloToken").value = cfg.trelloToken; $("sTrelloList").value = cfg.trelloAssignList; $("sTrelloBoards").value = cfg.trelloAssignBoards; $("sImgAllow").value = cfg.imageAllow; $("sLogSite").value = cfg.logSite; $("sLogFolder").value = cfg.logFolder; $("sPrefix").value = cfg.teamPrefix;
   }
   function syncNotifyBtn() {
     var b = $("btnNotify"), on = notifyOn();
@@ -1430,7 +1714,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       cfg.name = $("sName").value.trim() || "Work Dashboard"; cfg.clientId = $("sClient").value.trim(); cfg.tenantId = $("sTenant").value.trim();
       var r = parseInt($("sRefresh").value, 10); cfg.refresh = r >= 10 && r <= 900 ? r : 15; cfg.teamPrefix = $("sPrefix").value.trim() || "Support";
       cfg.shared = $("sShared").value.trim(); cfg.folder = $("sFolder").value.trim(); cfg.folderIn = $("sFolderIn").value;
-      cfg.badge = { support: $("bSupport").checked, folder: $("bFolder").checked, personal: $("bPersonal").checked, calendar: $("bCalendar").checked, team: $("bTeam").checked, trello: $("bTrello").checked }; cfg.trelloKey = $("sTrelloKey").value.trim(); cfg.trelloToken = $("sTrelloToken").value.trim(); cfg.trelloAssignList = $("sTrelloList").value.trim(); cfg.trelloAssignBoards = $("sTrelloBoards").value.trim(); cfg.imageAllow = $("sImgAllow").value.trim();
+      cfg.badge = { support: $("bSupport").checked, folder: $("bFolder").checked, personal: $("bPersonal").checked, calendar: $("bCalendar").checked, team: $("bTeam").checked, trello: $("bTrello").checked }; cfg.trelloKey = $("sTrelloKey").value.trim(); cfg.trelloToken = $("sTrelloToken").value.trim(); cfg.trelloAssignList = $("sTrelloList").value.trim(); cfg.trelloAssignBoards = $("sTrelloBoards").value.trim(); cfg.imageAllow = $("sImgAllow").value.trim(); cfg.logSite = $("sLogSite").value.trim(); cfg.logFolder = $("sLogFolder").value.trim();
       saveCfg(); location.reload();
     });
     $("btnAuth").addEventListener("click", function () {
