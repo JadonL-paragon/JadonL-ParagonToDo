@@ -99,6 +99,18 @@
   .tile.fifth { grid-column: span 2; }
   .tile.fourfifths { grid-column: span 8; }
   .tile.wide { grid-column: 1 / -1; }
+  .count.orange { color: var(--orange); }
+  .assign { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .alabel { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 4px; }
+  .arows { display: flex; flex-direction: column; gap: 6px; }
+  .arow { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+  .arow .count { font-size: 30px; line-height: 1.1; }
+  .arow .note { margin: 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (max-width: 900px) { .arows { flex-direction: row; flex-wrap: wrap; gap: 4px 20px; } .arow .count { font-size: 26px; } }
+  .fpanel { width: min(720px, 100%); }
+  button.person { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; border-radius: 6px; }
+  button.person:hover .pn { text-decoration: underline; color: var(--text); }
+  button.person:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   .statbtn { background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; text-align: left; }
   .statbtn:hover .count, .statbtn:hover .note { text-decoration: underline; }
   .tile.compact .stats > .statbtn { display: flex; align-items: baseline; gap: 6px; }
@@ -228,9 +240,10 @@
     <div class="row">
       <div><label for="sTrelloKey">Trello API key</label><input id="sTrelloKey" type="text" autocomplete="off" spellcheck="false"></div>
       <div><label for="sTrelloToken">Trello token (read-only)</label><input id="sTrelloToken" type="password" autocomplete="off" spellcheck="false"></div>
-      <div><label for="sTrelloList">List to count as "my cards" (optional)</label><input id="sTrelloList" type="text" placeholder="Blank = cards assigned to you" autocomplete="off"></div>
+      <div><label for="sTrelloList">Trello list to count</label><input id="sTrelloList" type="text" placeholder="e.g. To Be Assigned" autocomplete="off"></div>
+      <div><label for="sTrelloBoards">…on these boards (blank = all)</label><input id="sTrelloBoards" type="text" placeholder="Board names, comma separated" autocomplete="off"></div>
     </div>
-    <p class="hint">The Trello key and token are stored in this browser only. The list name is counted across all your boards (default: Jadon L - To Do). Leave it blank to count open cards assigned to you instead.</p>
+    <p class="hint">The Trello key and token are stored in this browser only. The tile shows the open cards in that list for each board you name; a board only appears if it has a list with that name.</p>
     <label>Show the dot, badge and pop-ups when something new arrives in</label>
     <div style="margin-bottom:12px">
       <label class="chk"><input type="checkbox" id="bSupport"> Support inbox</label>
@@ -242,6 +255,15 @@
     </div>
     <button id="btnSave" class="primary">Save &amp; reload</button>
   </section>
+  </div>
+</div>
+<div id="fpanel" class="overlay" hidden>
+  <div class="panel fpanel" role="dialog" aria-modal="true" aria-labelledby="fpTitle">
+    <div class="ph">
+      <div style="min-width:0"><div id="fpTitle" class="rs"></div><div id="fpSub" class="rm"></div></div>
+      <button id="fpClose" class="x" aria-label="Close folder">✕</button>
+    </div>
+    <div id="fpBody" class="tlbody"></div>
   </div>
 </div>
 <div id="reader" class="overlay" hidden>
@@ -369,7 +391,8 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     folderName: "",        // your folder name
     folderIn: "own",       // "own" or "shared"
     refreshSeconds: 10,
-    trelloList: "Jadon L - To Do",   // list whose open cards are counted as "my cards" (blank in Settings = cards assigned to you)
+    trelloAssignList: "To Be Assigned",   // Trello list whose open cards are counted on the Trello tile
+    trelloAssignBoards: "Paradigm ERP Specialists, Paradigm ERP Add Ons",   // only these boards (blank in Settings = every board that has the list)
     titles: { support: "Support Inbox", folder: "JadonL Support Inbox", personal: "jadonl@goparagon.com" }
   };
   // ================================================================================
@@ -384,7 +407,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     name: CONFIG.name, clientId: CONFIG.clientId, tenantId: CONFIG.tenantId, shared: CONFIG.sharedMailbox,
     folder: CONFIG.folderName, folderIn: CONFIG.folderIn, refresh: CONFIG.refreshSeconds,
     badge: { support: true, folder: true, personal: true, teams: true, calendar: false, team: false, trello: true },
-    dismissed: [], notify: false, teamPrefix: "Support", trelloKey: "", trelloToken: "", trelloListName: CONFIG.trelloList
+    dismissed: [], notify: false, teamPrefix: "Support", trelloKey: "", trelloToken: "", trelloAssignList: CONFIG.trelloAssignList, trelloAssignBoards: CONFIG.trelloAssignBoards
   };
   var msalApp = null, account = null, me = null;
   var tiles = {}, busy = false, timer = null, needSignIn = false;
@@ -526,7 +549,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         if (!ln.startsWith(lp) || ln === lp || seen[f.id]) return;
         seen[f.id] = true;
         var label = n.slice(prefix.length).replace(/^[\s\-\u2013\u2014_:]+/, "") || n;
-        found.push({ name: label, count: f.totalItemCount || 0 });
+        found.push({ name: label, full: n, id: f.id, base: bases[i], count: f.totalItemCount || 0 });
       });
     }
     if (!found.length && lastErr) throw lastErr;
@@ -569,11 +592,11 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       var snippet = typeof d.text === "string" ? d.text.replace(/\s+/g, " ").trim().slice(0, 80) : "";
       return { id: n.id, title: title, meta: meta, note: (who ? who + " " : "") + verb + ": " + title + (snippet ? " \u2014 " + snippet : ""), url: safeUrl(link) };
     });
-    // "my cards": refreshed at most about once a minute, and a failure here never hides the notifications
-    var listKey = (cfg.trelloListName || "").trim().toLowerCase();
-    if (tile.cards == null || tile.cardsKey !== listKey || Date.now() - (tile.cardsAt || 0) > 45000) {
-      try { var cr = await countTrelloCards(listKey); tile.cards = cr.n; tile.cardsInfo = cr.info; tile.cardsErr = null; tile.cardsKey = listKey; tile.cardsAt = Date.now(); }
-      catch (e) { tile.cards = null; tile.cardsErr = (e && e.message) || "Couldn\u2019t count cards."; }
+    // "to be assigned" counts: refreshed about once a minute, and a failure here never hides the notifications
+    var akey = (cfg.trelloAssignList || "") + "|" + (cfg.trelloAssignBoards || "");
+    if (!tile.assign || tile.assignKey !== akey || Date.now() - (tile.assignAt || 0) > 45000) {
+      try { tile.assign = await countAssign(); tile.assignErr = null; tile.assignKey = akey; tile.assignAt = Date.now(); }
+      catch (e) { tile.assign = null; tile.assignErr = (e && e.message) || "Couldn\u2019t count cards."; }
     }
   }
   async function trelloGet(path) {
@@ -584,25 +607,35 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     if (!res.ok) throw new Error("Trello returned an error (" + res.status + ").");
     return res.json();
   }
-  var trelloListIds = null;   // { key, at, ids }
-  async function countTrelloCards(listKey) {
-    if (!listKey) {
-      var mine = await trelloGet("/members/me/cards?filter=open&fields=id");
-      return { n: Array.isArray(mine) ? mine.length : 0, info: "Open cards assigned to you, across all boards" };
-    }
-    if (!trelloListIds || trelloListIds.key !== listKey || Date.now() - trelloListIds.at > 600000) {
+  var trelloAssignIds = null;   // { key, at, items: [{ id, board }] }
+  function shortBoardNames(names) {   // drop the words the boards share, e.g. "Paradigm ERP Specialists" + "Paradigm ERP Add Ons" -> "Specialists" + "Add Ons"
+    if (names.length < 2) return names.slice();
+    var w = names.map(function (n) { return n.trim().split(/\s+/); }), k = 0;
+    while (w.every(function (x) { return x.length > k + 1 && x[k].toLowerCase() === w[0][k].toLowerCase(); })) k++;
+    return names.map(function (n, i) { return k ? w[i].slice(k).join(" ") : n; });
+  }
+  async function countAssign() {
+    var want = (cfg.trelloAssignList || "").trim().toLowerCase();
+    if (!want) return [];
+    var only = (cfg.trelloAssignBoards || "").split(",").map(function (s) { return s.trim().toLowerCase(); }).filter(Boolean);
+    var key = want + "|" + only.join(",");
+    if (!trelloAssignIds || trelloAssignIds.key !== key || Date.now() - trelloAssignIds.at > 600000) {
       var boards = await trelloGet("/members/me/boards?filter=open&fields=name&lists=open&list_fields=name");
-      var ids = [];
-      (boards || []).forEach(function (b) { (b.lists || []).forEach(function (l) { if (String(l.name || "").trim().toLowerCase() === listKey) ids.push({ id: l.id, board: b.name || "board" }); }); });
-      trelloListIds = { key: listKey, at: Date.now(), ids: ids };
+      var items = [];
+      (boards || []).forEach(function (b) {
+        var bn = String(b.name || "");
+        if (only.length && only.indexOf(bn.trim().toLowerCase()) < 0) return;
+        (b.lists || []).forEach(function (l) { if (String(l.name || "").trim().toLowerCase() === want) items.push({ id: l.id, board: bn }); });
+      });
+      if (only.length) items.sort(function (a, b) { return only.indexOf(a.board.trim().toLowerCase()) - only.indexOf(b.board.trim().toLowerCase()); });
+      trelloAssignIds = { key: key, at: Date.now(), items: items };
     }
-    if (!trelloListIds.ids.length) throw new Error("No open Trello list named \u201c" + cfg.trelloListName + "\u201d was found.");
-    var total = 0, parts = [];
-    for (var i = 0; i < trelloListIds.ids.length; i++) {
-      var cs = await trelloGet("/lists/" + trelloListIds.ids[i].id + "/cards?fields=id");
-      var n = Array.isArray(cs) ? cs.length : 0; total += n; parts.push(trelloListIds.ids[i].board + ": " + n);
-    }
-    return { n: total, info: "Open cards in \u201c" + cfg.trelloListName + "\u201d \u2014 " + parts.join(", ") };
+    if (!trelloAssignIds.items.length) throw new Error("No open list named \u201c" + cfg.trelloAssignList + "\u201d was found" + (only.length ? " on those boards." : "."));
+    var shorts = shortBoardNames(trelloAssignIds.items.map(function (i) { return i.board; }));
+    return Promise.all(trelloAssignIds.items.map(async function (it, i) {
+      var cs = await trelloGet("/lists/" + it.id + "/cards?fields=id");
+      return { board: it.board, short: shorts[i], n: Array.isArray(cs) ? cs.length : 0 };
+    }));
   }
 
   // ---------- calendar ----------
@@ -706,7 +739,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       personal: { title: CONFIG.titles.personal, kind: "mail", half: true, run: function (t) { return loadMail(t, "/me", "inbox"); } },
       team: { title: "Team Support Folders", kind: "team", wide: true, run: loadTeam },
       teams: { title: "Teams", kind: "teams", fourfifths: true, icon: "teams", run: loadTeams },
-      trello: { title: "Trello \u00b7 Unread", kind: "trello", fifth: true, compact: true, icon: "trello",
+      trello: { title: "Trello", kind: "trello", fifth: true, compact: true, icon: "trello",
         need: function () { return (cfg.trelloKey.trim() && cfg.trelloToken.trim()) ? null : "Add your Trello API key and token in Settings."; },
         run: loadTrello }
     };
@@ -792,11 +825,10 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     } else {
       if (t.kind === "trello" && t.count != null) {
         var c = el("div", "stats");
-        [[String(t.count) + (t.capped && t.count > 0 ? "+" : ""), "unread", t.count === 0 ? "zero" : "some"], [t.cards == null ? "\u2013" : String(t.cards), "my cards", t.cards ? "some" : "zero"]].forEach(function (pr) {
+        [[String(t.count) + (t.capped && t.count > 0 ? "+" : ""), "unread", t.count === 0 ? "zero" : "some"]].forEach(function (pr) {
           var clickable = pr[1] === "unread" && t.count > 0;
           var blk = el(clickable ? "button" : "div", clickable ? "statbtn" : "");
           blk.appendChild(el("div", "count " + pr[2], pr[0])); blk.appendChild(el("div", "note", pr[1]));
-          if (pr[1] === "my cards" && t.cardsInfo) blk.title = t.cardsInfo;
           if (clickable) { blk.title = "View unread notifications"; blk.setAttribute("aria-label", "View " + t.count + " unread Trello notifications"); blk.addEventListener("click", openTrelloPanel); }
           c.appendChild(blk);
         });
@@ -806,15 +838,31 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         if (t.people && t.people.length) {
           var pc = el("div", "people");
           t.people.forEach(function (p) {
-            var b = el("div", "person");
+            var b = el("button", "person"); b.type = "button";
+            b.title = "Open " + (p.full || p.name); b.setAttribute("aria-label", p.count + " " + p.name + ", open folder");
+            b.dataset.fid = p.id || "";
+            b.addEventListener("click", function () { openFolder(p); });
             b.appendChild(el("div", "pc " + (p.count === 0 ? "zero" : "some"), String(p.count)));
+            b.appendChild(document.createTextNode(" "));   // a space between number and name for screen readers; flex layout ignores it
             b.appendChild(el("div", "pn", p.name));
             pc.appendChild(b);
           });
           box.appendChild(pc);
         } else box.appendChild(el("div", "note", "No folders starting with \u201c" + (cfg.teamPrefix || "Support") + "\u201d were found."));
       }
-      if (t.kind === "trello" && t.cardsErr) box.appendChild(el("div", "err", "Card count unavailable: " + t.cardsErr));
+      if (t.kind === "trello" && t.assign && t.assign.length) {
+        var as = el("div", "assign");
+        as.appendChild(el("div", "alabel", (cfg.trelloAssignList || "").trim()));
+        var rows = el("div", "arows");
+        t.assign.forEach(function (a) {
+          var r = el("div", "arow"); r.title = a.board + " \u2014 " + a.n + " open card" + (a.n === 1 ? "" : "s") + " in \u201c" + (cfg.trelloAssignList || "").trim() + "\u201d";
+          r.appendChild(el("div", "count " + (a.n > 0 ? "orange" : "zero"), String(a.n)));
+          r.appendChild(el("div", "note", a.short));
+          rows.appendChild(r);
+        });
+        as.appendChild(rows); box.appendChild(as);
+      }
+      if (t.kind === "trello" && t.assignErr) box.appendChild(el("div", "err", "Count unavailable: " + t.assignErr));
       if (t.state === "error") box.appendChild(el("div", "err", t.msg));
       if (t.kind === "teams" && t.loaded && (!t.items || !t.items.length)) box.appendChild(el("div", "note", "No recent messages from others."));
       if (t.items && t.items.length && t.kind !== "trello") {
@@ -829,7 +877,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   function sigOf(k) {
     var t = tiles[k];
     var st = (t.state === "loading" && (t.count != null || t.loaded)) ? "ok" : t.state;   // "refreshing" looks the same as "ok" when data is already showing
-    return JSON.stringify([st, t.msg, t.count, t.remaining, t.done, t.capped, t.cards, t.cardsInfo, t.cardsErr, t.loaded, t.people, k === "team" ? cfg.teamPrefix : 0,
+    return JSON.stringify([st, t.msg, t.count, t.remaining, t.done, t.capped, t.assign, t.assignErr, t.loaded, t.people, k === "team" ? cfg.teamPrefix : 0,
       t.items && t.items.map(function (i) { return [i.id, i.title, i.meta, i.url]; })]);
   }
   function render() {
@@ -958,6 +1006,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     else $("banner").style.display = "none";
     render(); updateIndicators();
     $("status").textContent = "Updated " + stamp.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+    if (!$("fpanel").hidden) reloadFolder();
     $("btnRefresh").disabled = false; $("btnRefresh").classList.remove("spinning"); busy = false;
   }
   function startTimer() {
@@ -1041,7 +1090,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   async function markRead(it) {
     try {   // needs the write permission; if it hasn't been granted yet, skip quietly
       await gfetch(it.base + "/messages/" + encodeURIComponent(it.mid), null, { method: "PATCH", body: JSON.stringify({ isRead: true }), scopes: WRITE_SCOPES });
-      it.title = String(it.title).replace(/^\u25CF\s*/, ""); render();
+      it.title = String(it.title).replace(/^\u25CF\s*/, ""); render(); if (!$("fpanel").hidden) fillFolderPanel();
     } catch (e) { /* ignore */ }
   }
   async function openMessage(it) {
@@ -1093,7 +1142,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     setActions(false); $("rdStatus").textContent = "Working\u2026";
     try {
       var moved = await moveMessage(it.base, it.mid, dest);
-      closeReader(); removeItem(it);
+      closeReader(); removeItem(it); folderItemGone(it);
       showToast(kind === "delete" ? "Moved to Deleted Items." : "Assigned to " + label + ".", moved && moved.id ? function () { undoMove(it.base, moved.id, orig); } : null);
       refresh();
     } catch (e) {
@@ -1117,13 +1166,74 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   }
   function openTrelloPanel() { lastFocusT = document.activeElement; fillTrelloPanel(); $("tlpanel").hidden = false; $("tlClose").focus(); }
   function closeTrelloPanel() { $("tlpanel").hidden = true; if (lastFocusT && lastFocusT.isConnected && lastFocusT.focus) lastFocusT.focus(); }
+  // ---------- a team folder's emails ----------
+  var fp = { open: false, folder: null, items: [], err: null, loading: false, seq: 0 }, lastFocusF = null, lastFocusFid = "";
+  function fpItems(msgs, base) {
+    return (msgs || []).map(function (x) {
+      var from = x.from && x.from.emailAddress, who = (from && (from.name || from.address)) || "";
+      var when = x.receivedDateTime ? new Date(x.receivedDateTime).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
+      var subj = x.subject || "(no subject)";
+      return { id: x.id, mid: x.id, base: base, subject: subj, title: (x.isRead === false ? "\u25CF " : "") + subj, meta: [who, when].filter(Boolean).join(" \u00b7 "), url: safeUrl(x.webLink) };
+    });
+  }
+  function fillFolderPanel() {
+    var f = fp.folder, body = $("fpBody"); if (!f) return;
+    var keep = body.scrollTop; body.textContent = "";
+    var cur = ((tiles.team && tiles.team.people) || []).filter(function (p) { return p.id === f.id; })[0];
+    if (cur) f.count = cur.count;
+    var count = typeof f.count === "number" ? f.count : fp.items.length;
+    $("fpTitle").textContent = f.full || f.name;
+    $("fpSub").textContent = fp.loading ? "Loading\u2026" : count + " email" + (count === 1 ? "" : "s");
+    if (fp.err) body.appendChild(el("div", "err", fp.err));
+    if (!fp.loading && !fp.err && !fp.items.length) body.appendChild(el("div", "note", "No emails in this folder."));
+    if (fp.items.length) {
+      var ul = itemList({ kind: "mail", items: fp.items, title: f.full || f.name });
+      ul.className = ""; ul.removeAttribute("tabindex"); ul.removeAttribute("aria-label");
+      body.appendChild(ul);
+      if (count > fp.items.length) body.appendChild(el("div", "note", "Showing the newest " + fp.items.length + " of " + count + "."));
+    }
+    body.scrollTop = keep;
+  }
+  async function loadFolder(silent) {
+    var f = fp.folder, seq = ++fp.seq;
+    try {
+      var r = await gfetch(f.base + "/mailFolders/" + encodeURIComponent(f.id) + "/messages?$top=50&$select=subject,from,isRead,webLink,receivedDateTime&$orderby=receivedDateTime desc");
+      if (seq !== fp.seq || !fp.open) return;
+      fp.items = fpItems(r.value, f.base); fp.err = null;
+    } catch (e) {
+      if (seq !== fp.seq || !fp.open) return;
+      fp.err = errText(e); if (!silent) fp.items = [];
+    }
+    fp.loading = false; fillFolderPanel();
+  }
+  function openFolder(p) {
+    lastFocusF = document.activeElement; lastFocusFid = p.id || "";
+    fp = { open: true, folder: p, items: [], err: null, loading: true, seq: fp.seq };
+    fillFolderPanel(); $("fpanel").hidden = false; $("fpClose").focus();
+    loadFolder(false);
+  }
+  function closeFolder() {
+    $("fpanel").hidden = true; fp.open = false; fp.seq++;
+    var back = (lastFocusF && lastFocusF.isConnected) ? lastFocusF : (lastFocusFid ? document.querySelector('button.person[data-fid="' + lastFocusFid.replace(/"/g, '\\"') + '"]') : null);   // the chip may have been redrawn while the window was open
+    if (back && back.focus) back.focus();
+  }
+  function reloadFolder() { if (fp.open) loadFolder(true); }
+  function folderItemGone(it) {
+    if (!fp.open) return;
+    fp.items = fp.items.filter(function (x) { return x.mid !== it.mid; });
+    if (fp.folder && typeof fp.folder.count === "number" && fp.folder.count > 0) fp.folder.count--;
+    fillFolderPanel();
+  }
   function wireReader() {
+    $("fpClose").addEventListener("click", closeFolder);
+    $("fpanel").addEventListener("click", function (ev) { if (ev.target === $("fpanel")) closeFolder(); });
     $("tlClose").addEventListener("click", closeTrelloPanel);
     $("tlpanel").addEventListener("click", function (ev) { if (ev.target === $("tlpanel")) closeTrelloPanel(); });
     document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !$("tlpanel").hidden) closeTrelloPanel(); });
     $("rdClose").addEventListener("click", closeReader);
     $("reader").addEventListener("click", function (ev) { if (ev.target === $("reader")) closeReader(); });
-    document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !$("reader").hidden) closeReader(); });
+    document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !$("reader").hidden) { closeReader(); ev.preventDefault(); } });
+    document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !$("fpanel").hidden && !ev.defaultPrevented) closeFolder(); });   // Esc closes the email window first, then the folder
     $("rdDelete").addEventListener("click", function () { runAction("delete"); });
     $("rdImages").addEventListener("click", function () { if (cur && cur.msg) { cur.images = true; renderBody(); } });
   }
@@ -1134,7 +1244,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     $("sName").value = cfg.name; $("sClient").value = cfg.clientId; $("sTenant").value = cfg.tenantId; $("sRefresh").value = cfg.refresh;
     $("sShared").value = cfg.shared; $("sFolder").value = cfg.folder; $("sFolderIn").value = cfg.folderIn;
     $("bSupport").checked = cfg.badge.support; $("bFolder").checked = cfg.badge.folder; $("bPersonal").checked = cfg.badge.personal;
-    $("bCalendar").checked = cfg.badge.calendar; $("bTeam").checked = cfg.badge.team; $("bTrello").checked = cfg.badge.trello; $("sTrelloKey").value = cfg.trelloKey; $("sTrelloToken").value = cfg.trelloToken; $("sTrelloList").value = cfg.trelloListName; $("sPrefix").value = cfg.teamPrefix;
+    $("bCalendar").checked = cfg.badge.calendar; $("bTeam").checked = cfg.badge.team; $("bTrello").checked = cfg.badge.trello; $("sTrelloKey").value = cfg.trelloKey; $("sTrelloToken").value = cfg.trelloToken; $("sTrelloList").value = cfg.trelloAssignList; $("sTrelloBoards").value = cfg.trelloAssignBoards; $("sPrefix").value = cfg.teamPrefix;
   }
   function syncNotifyBtn() {
     var b = $("btnNotify"), on = notifyOn();
@@ -1166,7 +1276,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       cfg.name = $("sName").value.trim() || "Work Dashboard"; cfg.clientId = $("sClient").value.trim(); cfg.tenantId = $("sTenant").value.trim();
       var r = parseInt($("sRefresh").value, 10); cfg.refresh = r >= 10 && r <= 900 ? r : 15; cfg.teamPrefix = $("sPrefix").value.trim() || "Support";
       cfg.shared = $("sShared").value.trim(); cfg.folder = $("sFolder").value.trim(); cfg.folderIn = $("sFolderIn").value;
-      cfg.badge = { support: $("bSupport").checked, folder: $("bFolder").checked, personal: $("bPersonal").checked, calendar: $("bCalendar").checked, team: $("bTeam").checked, trello: $("bTrello").checked }; cfg.trelloKey = $("sTrelloKey").value.trim(); cfg.trelloToken = $("sTrelloToken").value.trim(); cfg.trelloListName = $("sTrelloList").value.trim();
+      cfg.badge = { support: $("bSupport").checked, folder: $("bFolder").checked, personal: $("bPersonal").checked, calendar: $("bCalendar").checked, team: $("bTeam").checked, trello: $("bTrello").checked }; cfg.trelloKey = $("sTrelloKey").value.trim(); cfg.trelloToken = $("sTrelloToken").value.trim(); cfg.trelloAssignList = $("sTrelloList").value.trim(); cfg.trelloAssignBoards = $("sTrelloBoards").value.trim();
       saveCfg(); location.reload();
     });
     $("btnAuth").addEventListener("click", function () {
