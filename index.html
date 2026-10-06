@@ -24,7 +24,7 @@
   body { margin: 0; background: var(--bg); color: var(--text);
     font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
   .wrap { max-width: 980px; margin: 0 auto; padding: 10px 14px 24px; }
-  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  .pagehead { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 12px 0 0; }
   h1 { font-size: 20px; margin: 0; }
   .brand { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
   #brandLogo { height: 38px; width: auto; display: block; }
@@ -57,6 +57,9 @@
   .tile.compact .stats > div, .tile.compact .stats > .statbtn { display: flex; align-items: baseline; gap: 5px; }
   .tile.compact .stats .count { font-size: 26px; }
   .tile.compact .stats .note { margin-top: 0; font-size: 11.5px; }
+  .tile.fifth.compact .stats { flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 8px; }
+  .tile.fifth.compact .stats .count { font-size: 30px; }
+  .tile.fifth.compact .stats .note { font-size: 12px; }
   .thead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
   .thead h2 { margin: 0; }
   .thead button.more { margin-top: 0; }
@@ -139,12 +142,12 @@
   #toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; z-index: 60; box-shadow: 0 6px 24px rgba(0,0,0,.35); font-size: 14px; }
   #toast button { margin-left: 10px; padding: 3px 10px; }
   @media (max-width: 1000px) { .tile.fifth { grid-column: span 3; } .tile.fourfifths { grid-column: span 7; } }   /* a little more room for Trello so its two numbers stay on one line */
-  @media (max-width: 900px) { .tile.fifth, .tile.fourfifths { grid-column: 1 / -1; } }
+  @media (max-width: 900px) { .tile.fifth, .tile.fourfifths { grid-column: 1 / -1; } .tile.fifth.compact .stats { flex-direction: row; gap: 4px 20px; margin-top: 2px; } .tile.fifth.compact .stats .count { font-size: 26px; } }
   @media (max-width: 760px) { .tile, .tile.wide { grid-column: 1 / -1; } .tile.half { grid-column: span 5; } }
   @media (max-width: 520px) { .tile.half { grid-column: 1 / -1; } }
   button.more { margin-top: 10px; font-size: 13px; padding: 5px 10px; }
-  .tile.fourfifths { container-type: inline-size; }
-  .people { display: flex; flex-wrap: wrap; gap: 4px 20px; gap: 4px clamp(8px, 2cqw, 20px); margin-top: 2px; }
+  .tile[data-k="team"] { container-type: inline-size; }
+  .people { display: flex; flex-wrap: wrap; justify-content: space-evenly; gap: 4px 20px; gap: 4px clamp(8px, 2cqw, 20px); margin-top: 2px; }
   .person { display: flex; align-items: baseline; gap: 6px; gap: clamp(4px, 0.8cqw, 6px); }
   .pc { font-size: 24px; font-size: clamp(17px, 3.3cqw, 24px); font-weight: 700; line-height: 1.15; }
   .pc.zero { color: var(--muted); }
@@ -152,12 +155,12 @@
   .pn { font-size: 13px; font-size: clamp(11px, 1.75cqw, 13px); color: var(--muted); white-space: nowrap; }
   #banner { display: none; background: var(--card); border: 1px solid var(--warn); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
   #banner button { margin-top: 8px; }
-  #settings { display: none; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
-  #settings.open { display: block; }
+  .spanel { width: min(820px, 100%); }
+  #settings { flex: 1; min-height: 0; overflow-y: auto; margin-top: 10px; padding-right: 4px; }
   .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 12px; }
   label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 4px; }
   label.chk { display: inline-flex; align-items: center; gap: 6px; margin-right: 14px; color: var(--text); font-size: 13.5px; }
-  input[type=text], input[type=email], input[type=number], select { width: 100%; font: inherit; color: var(--text); background: var(--bg);
+  input[type=text], input[type=email], input[type=number], input[type=password], select { width: 100%; font: inherit; color: var(--text); background: var(--bg);
     border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; }
   .hint { color: var(--muted); font-size: 12.5px; margin: 0 0 12px; }
   code { background: var(--bg); border: 1px solid var(--line); padding: 1px 5px; border-radius: 5px; font-size: 12.5px; word-break: break-all; }
@@ -167,7 +170,13 @@
 </head>
 <body>
 <main class="wrap">
-  <header>
+
+  <div id="banner"></div>
+
+
+  <div class="grid" id="grid"></div>
+
+  <footer class="pagehead">
     <div class="brand">
       <img id="brandLogo" alt="Paragon Computing Solutions" src="data:image/png;base64,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">
       <div>
@@ -183,15 +192,21 @@
         <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
       </button>
     </div>
-  </header>
+  </footer>
+</main>
 
-  <div id="banner"></div>
-
-  <section id="settings">
+<div id="stwrap" class="overlay" hidden>
+  <div class="panel spanel" role="dialog" aria-modal="true" aria-labelledby="stTitle">
+    <div class="ph">
+      <div id="stTitle" class="rs">Settings</div>
+      <button id="stClose" class="x" aria-label="Close settings">✕</button>
+    </div>
+    <section id="settings" class="sbody">
     <div class="acct">
       <span class="rlabel">Account &amp; alerts</span>
       <button id="btnNotify">Notifications: Off</button>
       <button id="btnAuth" style="display:none">Sign in</button>
+      <div id="acctMsg" class="hint" style="flex-basis:100%;margin:0"></div>
     </div>
     <p class="hint">Saved in this browser only. Register this exact redirect URI in Entra as a <b>Single-page application</b>: <code id="redirectShown"></code></p>
     <div class="row">
@@ -226,10 +241,8 @@
     </div>
     <button id="btnSave" class="primary">Save &amp; reload</button>
   </section>
-
-  <div class="grid" id="grid"></div>
-</main>
-
+  </div>
+</div>
 <div id="reader" class="overlay" hidden>
   <div class="panel rpanel" role="dialog" aria-modal="true" aria-labelledby="rdSubject">
     <div class="rhead">
@@ -690,13 +703,13 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         },
         run: function (t) { return loadMail(t, cfg.folderIn === "shared" ? sharedBase() : "/me", cfg.folder.trim()); } },
       personal: { title: CONFIG.titles.personal, kind: "mail", half: true, run: function (t) { return loadMail(t, "/me", "inbox"); } },
-      team: { title: "Team support folders", kind: "team", fourfifths: true, run: loadTeam },
-      teams: { title: "Teams \u00b7 recent messages", kind: "teams", wide: true, icon: "teams", run: loadTeams },
+      team: { title: "Team support folders", kind: "team", wide: true, run: loadTeam },
+      teams: { title: "Teams \u00b7 recent messages", kind: "teams", fourfifths: true, icon: "teams", run: loadTeams },
       trello: { title: "Trello \u00b7 unread", kind: "trello", fifth: true, compact: true, icon: "trello",
         need: function () { return (cfg.trelloKey.trim() && cfg.trelloToken.trim()) ? null : "Add your Trello API key and token in Settings."; },
         run: loadTrello }
     };
-    var order = ["support", "calendar", "folder", "personal", "trello", "team", "teams"], ordered = {};
+    var order = ["support", "calendar", "folder", "personal", "team", "trello", "teams"], ordered = {};
     order.forEach(function (k) { ordered[k] = tiles[k]; });
     tiles = ordered;
     Object.keys(tiles).forEach(function (k) { tiles[k].state = "idle"; tiles[k].items = []; });
@@ -1127,10 +1140,13 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     b.textContent = "Notifications: " + (on ? "On" : "Off");
     b.className = on ? "primary" : "";
   }
+  function acctNote(text) { $("acctMsg").textContent = text || ""; }
+  function openSettings() { acctNote(""); $("stwrap").hidden = false; $("btnSettings").setAttribute("aria-expanded", "true"); $("sName").focus(); }
+  function closeSettings() { $("stwrap").hidden = true; $("btnSettings").setAttribute("aria-expanded", "false"); $("btnSettings").focus(); }
   function wireUi() {
     $("btnNotify").addEventListener("click", async function () {
       if (notifyOn()) { cfg.notify = false; saveCfg(); syncNotifyBtn(); return; }
-      if (typeof Notification === "undefined") { showBanner("This browser doesn\u2019t support desktop notifications."); return; }
+      if (typeof Notification === "undefined") { acctNote("This browser doesn\u2019t support desktop notifications."); return; }
       var p = Notification.permission;
       if (p === "default") { try { p = await Notification.requestPermission(); } catch (e) {} }
       if (p === "granted") {
@@ -1138,10 +1154,12 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         try { new Notification("Notifications are on", { body: "You\u2019ll get a pop-up when something new arrives while you\u2019re away from this page.", icon: "icon-192.png" }); } catch (e) {}
       } else {
         cfg.notify = false; saveCfg(); syncNotifyBtn();
-        showBanner("Notifications are blocked for this site. Allow them from the site settings icon next to the address bar, then press the button again.");
+        acctNote("Notifications are blocked for this site. Allow them from the site settings icon next to the address bar, then press the button again.");
       }
     });
-    $("btnSettings").addEventListener("click", function () { var open = $("settings").classList.toggle("open"); $("btnSettings").setAttribute("aria-expanded", open ? "true" : "false"); });
+    $("btnSettings").addEventListener("click", function () { if ($("stwrap").hidden) openSettings(); else closeSettings(); });
+    $("stClose").addEventListener("click", closeSettings);
+    document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !$("stwrap").hidden) closeSettings(); });   // clicking outside doesn't close it, so a stray click can't throw away what you typed
     $("btnRefresh").addEventListener("click", refresh);
     $("btnSave").addEventListener("click", function () {
       cfg.name = $("sName").value.trim() || "Work Dashboard"; cfg.clientId = $("sClient").value.trim(); cfg.tenantId = $("sTenant").value.trim();
@@ -1162,7 +1180,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       $("status").textContent = "Not signed in"; return;
     }
     if (!cfg.clientId || !cfg.tenantId) {
-      $("settings").classList.add("open");
+      openSettings();
       showBanner("Setup needed: enter your Entra Application (client) ID and Directory (tenant) ID below, and register the redirect URI shown.");
       $("status").textContent = "Setup needed"; return;
     }
