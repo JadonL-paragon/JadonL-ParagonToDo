@@ -118,7 +118,10 @@
   .hright { display: flex; align-items: center; gap: 10px; }
   .histbtn { display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px 3px 9px; border-radius: 999px; font-size: 12.5px; font-weight: 600; }
   .histbtn svg { color: var(--accent); }
-  #vlSearch { width: 100%; margin-top: 8px; }
+  .histbtn.iconly { padding: 0; width: 26px; height: 26px; justify-content: center; gap: 0; }
+  #vlSearch, #tlSearch { width: 100%; margin-top: 8px; }
+  #tlSearch[hidden], #tlSub[hidden] { display: none; }
+  a.vrow { text-decoration: none; }
   #vlSearch[hidden] { display: none; }
   .vread.logmode .rlabel, .vread.logmode #rdChips, .vread.logmode #rdDelete { display: none; }
   .vcust { font-weight: 600; }
@@ -293,8 +296,9 @@
     <div class="row">
       <div><label for="sLogSite">Support log: SharePoint site</label><input id="sLogSite" type="text" autocomplete="off" spellcheck="false" placeholder="yourcompany.sharepoint.com/sites/YourSite"></div>
       <div><label for="sLogFolder">…and its folder (in the Documents library)</label><input id="sLogFolder" type="text" autocomplete="off" spellcheck="false" placeholder="Support Log"></div>
+      <div><label for="sLogPerson">JadonL tile history: whose emails</label><input id="sLogPerson" type="text" autocomplete="off" spellcheck="false" placeholder="email or name, comma separated"></div>
     </div>
-    <p class="hint">The History button on the Support Inbox tile lists the emails saved in that folder. The first time, it asks for permission to read SharePoint files.</p>
+    <p class="hint">The History button on the Support Inbox tile lists the emails saved in that folder; on the JadonL tile it shows only emails from or logged by the person named here. The first time, it asks for permission to read SharePoint files.</p>
     <p class="hint">Pictures built into an email always show. Pictures fetched from the internet can tell the sender when you opened the message, so only list senders you trust. A sender\u2019s address can be forged, so a domain you list is only as safe as your mail filtering.</p>
     <p class="hint">The Trello key and token are stored in this browser only. The tile shows the open cards in that list for each board you name; a board only appears if it has a list with that name.</p>
     <label>Show the dot, badge and pop-ups when something new arrives in</label>
@@ -348,9 +352,10 @@
 <div id="tlpanel" class="overlay" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="tlTitle">
     <div class="ph">
-      <div id="tlTitle" class="rs">Trello · Unread</div>
+      <div style="min-width:0"><div id="tlTitle" class="rs">Trello · Unread</div><div id="tlSub" class="rm" hidden></div></div>
       <button id="tlClose" class="x" aria-label="Close">✕</button>
     </div>
+    <input id="tlSearch" type="search" placeholder="Search notifications…" aria-label="Search notifications" autocomplete="off" hidden>
     <div id="tlBody" class="tlbody"></div>
   </div>
 </div>
@@ -445,6 +450,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     folderIn: "own",       // "own" or "shared"
     refreshSeconds: 10,
     logSite: "paragoncomputing.sharepoint.com/sites/ParadigmSupport",   // SharePoint site that holds the support log
+    logPerson: "JadonL@goparagon.com",   // the JadonL Support Inbox tile\u2019s History shows log emails from or logged by this person (email or name, comma separated)
     logFolder: "Support Log",   // folder (in the site\u2019s Documents library) with the saved .eml emails
     trelloAssignList: "To Be Assigned",   // Trello list whose open cards are counted on the Trello tile
     trelloAssignBoards: "Paradigm ERP Specialists, Paradigm ERP Add Ons",   // only these boards (blank in Settings = every board that has the list)
@@ -463,7 +469,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     name: CONFIG.name, clientId: CONFIG.clientId, tenantId: CONFIG.tenantId, shared: CONFIG.sharedMailbox,
     folder: CONFIG.folderName, folderIn: CONFIG.folderIn, refresh: CONFIG.refreshSeconds,
     badge: { support: true, folder: true, personal: true, teams: true, calendar: false, team: false, trello: true },
-    dismissed: [], notify: false, teamPrefix: "Support", trelloKey: "", trelloToken: "", trelloAssignList: CONFIG.trelloAssignList, trelloAssignBoards: CONFIG.trelloAssignBoards, imageAllow: "", logSite: CONFIG.logSite, logFolder: CONFIG.logFolder
+    dismissed: [], notify: false, teamPrefix: "Support", trelloKey: "", trelloToken: "", trelloAssignList: CONFIG.trelloAssignList, trelloAssignBoards: CONFIG.trelloAssignBoards, imageAllow: "", logSite: CONFIG.logSite, logFolder: CONFIG.logFolder, logPerson: CONFIG.logPerson
   };
   var msalApp = null, account = null, me = null;
   var tiles = {}, busy = false, timer = null, needSignIn = false;
@@ -784,20 +790,20 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   function defineTiles() {
     tiles = {
       calendar: { title: "Meetings Today", kind: "cal", half: true, compact: true, run: loadCal },
-      support: { title: CONFIG.titles.support, kind: "mail", half: true, compact: true, history: true,
+      support: { title: CONFIG.titles.support, kind: "mail", half: true, compact: true, history: "log",
         need: function () { return cfg.shared.trim() ? null : "Add the support mailbox address in Settings."; },
         run: function (t) { return loadMail(t, sharedBase(), "inbox"); } },
-      folder: { title: CONFIG.titles.folder, kind: "mail", half: true,
+      folder: { title: CONFIG.titles.folder, kind: "mail", half: true, history: "logperson",
         need: function () {
           if (!cfg.folder.trim()) return "Add your folder name in Settings.";
           if (cfg.folderIn === "shared" && !cfg.shared.trim()) return "This folder is set to the shared mailbox, which needs an address in Settings.";
           return null;
         },
         run: function (t) { return loadMail(t, cfg.folderIn === "shared" ? sharedBase() : "/me", cfg.folder.trim()); } },
-      personal: { title: CONFIG.titles.personal, kind: "mail", half: true, run: function (t) { return loadMail(t, "/me", "inbox"); } },
+      personal: { title: CONFIG.titles.personal, kind: "mail", half: true, history: "mail", run: function (t) { return loadMail(t, "/me", "inbox"); } },
       team: { title: "Team Support Folders", kind: "team", wide: true, run: loadTeam },
       teams: { title: "Teams", kind: "teams", fourfifths: true, icon: "teams", run: loadTeams },
-      trello: { title: "Trello", kind: "trello", fifth: true, compact: true, icon: "trello",
+      trello: { title: "Trello", kind: "trello", fifth: true, compact: true, history: "trello", icon: "trello",
         need: function () { return (cfg.trelloKey.trim() && cfg.trelloToken.trim()) ? null : "Add your Trello API key and token in Settings."; },
         run: loadTrello }
     };
@@ -883,11 +889,12 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     head.appendChild(h2);
     var firstLoad = t.state === "loading" && t.count == null && !t.loaded;
     var right = el("div", "hright");
-    if (t.history) {
-      var hb = el("button", "histbtn"); hb.type = "button"; hb.dataset.fid = "hist-" + k;
-      hb.title = "Open the support log: emails saved in SharePoint"; hb.setAttribute("aria-label", "Open support log history");
-      hb.appendChild(historyIcon()); hb.appendChild(document.createTextNode("History"));
-      hb.addEventListener("click", function () { openLog("hist-" + k); });
+    if (t.history && t.state !== "need") {
+      var HB = { log: "Open the support log: emails saved in SharePoint", logperson: "Open the support log, only emails from or logged by " + (cfg.logPerson || "this person"), mail: "Open the history of everything you sent and received", trello: "Open recent Trello notifications, read and unread" };
+      var hb = el("button", "histbtn" + (t.fifth ? " iconly" : "")); hb.type = "button"; hb.dataset.fid = "hist-" + k;
+      hb.title = HB[t.history]; hb.setAttribute("aria-label", "History: " + HB[t.history]);
+      hb.appendChild(historyIcon()); if (!t.fifth) hb.appendChild(document.createTextNode("History"));
+      hb.addEventListener("click", function () { openHistory(t.history, "hist-" + k); });
       right.appendChild(hb);
     }
     if (!firstLoad && t.state !== "need" && t.count != null) {
@@ -982,7 +989,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       tileSig[k] = sig;
       if (saved) { var ulNew = box.querySelector("ul"); if (ulNew) ulNew.scrollTop = saved; }
     });
-    if (!$("tlpanel").hidden) fillTrelloPanel();
+    if (!$("tlpanel").hidden && !th.open) fillTrelloPanel();
   }
 
   // ---------- notification indicators: favicon dot, title count, app badge ----------
@@ -1230,7 +1237,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   var lastFocus = null, lastFocusT = null;
   function closeReader() {
     $("reader").hidden = true; cur = null; fp.open = false; fp.seq++; $("rdBody").textContent = ""; setSplit(false);
-    var back = (lastFocus && lastFocus.isConnected) ? lastFocus : (lastFocusFid ? document.querySelector('[data-fid="' + lastFocusFid.replace(/"/g, '\\"') + '"]') : null);   // the button may have been redrawn while the window was open
+    var back = (lastFocus && lastFocus !== document.body && lastFocus.isConnected) ? lastFocus : (lastFocusFid ? document.querySelector('[data-fid="' + lastFocusFid.replace(/"/g, '\\"') + '"]') : null);   // the button may have been redrawn while the window was open
     if (back && back.focus) back.focus();
   }
   function showToast(text, undoFn) {
@@ -1419,8 +1426,92 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     });
     body.appendChild(ul);
   }
-  function openTrelloPanel() { lastFocusT = document.activeElement; fillTrelloPanel(); $("tlpanel").hidden = false; $("tlClose").focus(); }
-  function closeTrelloPanel() { $("tlpanel").hidden = true; if (lastFocusT && lastFocusT.isConnected && lastFocusT.focus) lastFocusT.focus(); }
+  // ---------- Trello history: every recent notification, read or not ----------
+  var th = { open: false, items: [], q: "", page: 0, more: false, loading: false, err: null, seq: 0, paging: false }, lastFocusTfid = "", TH_CAP = 500;
+  function trelloRow(n) {
+    var d = n.data || {}, card = d.card, board = d.board, who = (n.memberCreator && n.memberCreator.fullName) || "";
+    var verb = TRELLO_VERBS[n.type] || n.type || "notification", title = (card && card.name) || (board && board.name) || "Trello notification";
+    var link = card && card.shortLink ? "https://trello.com/c/" + card.shortLink : (board && board.shortLink ? "https://trello.com/b/" + board.shortLink : null);
+    if (link && card && card.shortLink && (n.type === "mentionedOnCard" || n.type === "commentCard") && /^[0-9a-f]{24}$/i.test(n.idAction || "")) link += "#comment-" + n.idAction;
+    var snippet = typeof d.text === "string" ? d.text.replace(/\s+/g, " ").trim().slice(0, 160) : "", bname = (board && board.name) || "";
+    return { id: n.id, who: who, verb: verb, title: title, board: bname, text: snippet, url: safeUrl(link), unread: !!n.unread,
+      when: new Date(n.date || 0), hay: [who, verb, title, bname, snippet].join(" ").toLowerCase() };
+  }
+  function thSubtitle(list) {
+    var q = String(th.q || "").trim(), n = list.length;
+    if (th.loading) return "Loading\u2026";
+    var tail = th.more ? "the newest " + th.items.length : "all " + th.items.length;
+    if (!q) return th.items.length + " notification" + (th.items.length === 1 ? "" : "s") + (th.items.length ? " \u00b7 " + dateRange(th.items) : "") + (th.more ? " \u00b7 more available" : "");
+    if (n === 0) return "No matches \u00b7 searched " + tail;
+    return n + " match" + (n === 1 ? "" : "es") + " \u00b7 " + dateRange(list) + (th.paging ? " \u00b7 searching older\u2026" : " \u00b7 searched " + tail);
+  }
+  function fillTrelloHistory() {
+    var body = $("tlBody"), keep = body.scrollTop; body.textContent = "";
+    var q = String(th.q || "").trim().toLowerCase(), list = q ? th.items.filter(function (i) { return i.hay.indexOf(q) >= 0; }) : th.items;
+    $("tlSub").textContent = thSubtitle(list);
+    if (th.err) body.appendChild(el("div", "err", th.err));
+    if (!th.loading && !th.err && !list.length) body.appendChild(el("div", "note", q ? "No notifications match that search." : "No notifications yet."));
+    var last = "";
+    list.forEach(function (it) {
+      var g = logGroup(it.when); if (g !== last) { body.appendChild(el("div", "vgroup", g)); last = g; }
+      var row = el(it.url ? "a" : "div", "vrow" + (it.unread ? " unread" : ""));
+      if (it.url) { row.href = it.url; row.target = "_blank"; row.rel = "noopener noreferrer"; }
+      var av = el("div", "vav", (it.who.replace(/[^A-Za-z0-9]/g, "").charAt(0) || "T").toUpperCase()); av.setAttribute("aria-hidden", "true");
+      var main = el("div", "vmain"), l1 = el("div", "vl1"), l2 = el("div", "vl2");
+      l1.appendChild(el("span", "vsender", (it.who ? it.who + " " : "") + it.verb)); l1.appendChild(el("span", "vtime", mailTime(it.when)));
+      l2.appendChild(el("span", "vsubj", it.title));
+      main.appendChild(l1); main.appendChild(l2);
+      var sub = [it.board, it.text].filter(Boolean).join(" \u00b7 "); if (sub) main.appendChild(el("div", "vprev", sub));
+      row.appendChild(av); row.appendChild(main); body.appendChild(row);
+    });
+    if (th.more && !th.loading && !th.paging) {
+      var more = el("button", "", "Load older notifications"); more.type = "button"; more.style.margin = "10px 8px";
+      more.addEventListener("click", function () { more.disabled = true; loadTrelloHist(true); });
+      body.appendChild(more);
+    }
+    body.scrollTop = keep;
+  }
+  async function loadTrelloHist(more) {
+    var seq = ++th.seq;
+    if (!more) { th.loading = true; th.err = null; th.page = 0; th.items = []; }
+    fillTrelloHistory();
+    try {
+      var list = await trelloGet("/members/me/notifications?limit=100&page=" + (more ? th.page + 1 : 0) + "&read_filter=all");
+      if (seq !== th.seq || !th.open) return;
+      if (!Array.isArray(list)) throw new Error("Trello returned something unexpected.");
+      if (more) th.page++;
+      var seen = {}; th.items.forEach(function (x) { seen[x.id] = 1; });
+      th.items = th.items.concat(list.map(trelloRow).filter(function (x) { return !seen[x.id]; })).sort(function (a, b) { return b.when - a.when; });
+      th.more = list.length >= 100 && th.items.length < TH_CAP;
+    } catch (e) {
+      if (seq !== th.seq || !th.open) return;
+      th.err = (e && e.message) || "Couldn\u2019t load notifications.";
+    }
+    th.loading = false; fillTrelloHistory();
+  }
+  async function searchTrelloAll() {   // a search should cover everything we can load, so keep paging while it runs
+    if (th.paging) return;
+    th.paging = th.more; fillTrelloHistory();
+    try { var g = 0; while (g++ < 10 && th.open && String(th.q || "").trim() && th.more && !th.err) await loadTrelloHist(true); }
+    finally { th.paging = false; if (th.open) fillTrelloHistory(); }
+  }
+  function openTrelloHistory(focusKey) {
+    lastFocusT = document.activeElement; lastFocusTfid = focusKey || "";
+    th = { open: true, items: [], q: "", page: 0, more: false, loading: true, err: null, seq: th.seq, paging: false };
+    $("tlTitle").textContent = "Trello \u00b7 Recent notifications"; $("tlSub").hidden = false; var s = $("tlSearch"); s.hidden = false; s.value = "";
+    fillTrelloHistory(); $("tlpanel").hidden = false; s.focus();
+    loadTrelloHist(false);
+  }
+  function openTrelloPanel() {
+    lastFocusT = document.activeElement; lastFocusTfid = ""; th.open = false; th.seq++;
+    $("tlTitle").textContent = "Trello \u00b7 Unread"; $("tlSub").hidden = true; $("tlSearch").hidden = true;
+    fillTrelloPanel(); $("tlpanel").hidden = false; $("tlClose").focus();
+  }
+  function closeTrelloPanel() {
+    $("tlpanel").hidden = true; th.open = false; th.seq++;
+    var back = (lastFocusT && lastFocusT !== document.body && lastFocusT.isConnected) ? lastFocusT : (lastFocusTfid ? document.querySelector('[data-fid="' + lastFocusTfid.replace(/"/g, '\\"') + '"]') : null);
+    if (back && back.focus) back.focus();
+  }
   // ---------- folder view: emails with a few preview lines on the left, the reading pane on the right ----------
   var fp = { open: false, folder: null, items: [], err: null, loading: false, seq: 0, sel: null }, lastFocusFid = "", selTimer = null;
   function setSplit(on) {
@@ -1445,12 +1536,18 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     p.setAttribute("d", "M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48");
     s.appendChild(p); return s;
   }
-  function fpItems(msgs, base) {
+  function fpItems(msgs, base, sent) {
     return (msgs || []).map(function (x) {
-      var from = x.from && x.from.emailAddress, who = (from && (from.name || from.address)) || "Unknown sender", subj = x.subject || "(no subject)";
-      return { id: x.id, mid: x.id, base: base, subject: subj, title: (x.isRead === false ? "\u25CF " : "") + subj, sender: who,
-        preview: String(x.bodyPreview || "").replace(/\s+/g, " ").trim(), when: x.receivedDateTime ? new Date(x.receivedDateTime) : new Date(0),
-        isRead: x.isRead !== false, hasAtt: !!x.hasAttachments, url: safeUrl(x.webLink) };
+      var from = x.from && x.from.emailAddress, subj = x.subject || "(no subject)";
+      var to = (x.toRecipients || []).map(function (r) { var a = r.emailAddress || {}; return a.name || a.address || ""; }).filter(Boolean);
+      var who;
+      if (sent) { var more = to.length > 2 ? " +" + (to.length - 2) : ""; who = "To: " + (to.slice(0, 2).join(", ") + more || "(no recipient)"); }
+      else who = (from && (from.name || from.address)) || "Unknown sender";
+      var pv = String(x.bodyPreview || "").replace(/\s+/g, " ").trim();
+      return { id: x.id, mid: x.id, base: base, subject: subj, title: (x.isRead === false ? "\u25CF " : "") + subj, sender: who, sent: !!sent, avSrc: sent ? (to[0] || "") : who,
+        preview: pv, when: x.receivedDateTime ? new Date(x.receivedDateTime) : new Date(0),
+        isRead: x.isRead !== false, hasAtt: !!x.hasAttachments, url: safeUrl(x.webLink),
+        hay: [subj, who, (from && from.address) || "", to.join(" "), pv].join(" ").toLowerCase() };
     });
   }
   function selectRow(it, row) {
@@ -1473,10 +1570,10 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     return a.toLocaleDateString([], Object.assign({}, md, yr)) + " \u2013 " + b.toLocaleDateString([], Object.assign({}, md, yr));
   }
   function logSubtitle(list) {
-    var q = String(fp.q || "").trim(), n = list.length;
+    var q = String(fp.q || "").trim(), n = list.length, who = fp.person ? " \u00b7 " + fp.personLabel : "";
     if (fp.loading) return "Loading\u2026";
-    if (!q) return fp.items.length + " email" + (fp.items.length === 1 ? "" : "s") + (fp.next ? " loaded \u00b7 more available" : (fp.truncated ? " loaded \u00b7 the log is larger" : ""));
-    var head = n === 0 ? "No matches" : n + " match" + (n === 1 ? "" : "es") + " \u00b7 " + dateRange(list);
+    if (!q && !fp.person) return fp.items.length + " email" + (fp.items.length === 1 ? "" : "s") + (fp.next ? " loaded \u00b7 more available" : (fp.truncated ? " loaded \u00b7 the log is larger" : ""));
+    var head = n === 0 ? "No matches" : n + (q ? " match" + (n === 1 ? "" : "es") : " email" + (n === 1 ? "" : "s")) + " \u00b7 " + dateRange(list) + who;
     if (fp.searching) return head + " \u00b7 searching older emails\u2026";
     return head + " \u00b7 searched " + (fp.next ? "the newest " : (fp.truncated ? "the first " : "all ")) + fp.items.length;
   }
@@ -1485,10 +1582,10 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     var keep = body.scrollTop; body.textContent = "";
     var cur2 = ((tiles.team && tiles.team.people) || []).filter(function (p) { return p.id === f.id && p.base === f.base; })[0];
     if (cur2) f.count = cur2.count;
-    var isLog = fp.mode === "log", list = isLog ? logView() : fp.items;
+    var isLog = fp.mode === "log", isHist = isLog || fp.mode === "hist", list = isHist ? logView() : fp.items;
     var count = typeof f.count === "number" ? f.count : fp.items.length;
     $("vlTitle").textContent = f.full || f.name;
-    if (isLog) $("vlSub").textContent = logSubtitle(list);
+    if (isHist) $("vlSub").textContent = logSubtitle(list);
     else $("vlSub").textContent = fp.loading ? "Loading\u2026" : count + " email" + (count === 1 ? "" : "s");
     if (fp.err) body.appendChild(el("div", "err", fp.err));
     if (isLog && fp.needConsent) {
@@ -1496,14 +1593,14 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       cbn.addEventListener("click", async function () { try { await grantScopes(SP_SCOPES); loadLog(false); } catch (e) { fp.needConsent = false; fp.err = e.message; fillFolderPanel(); } });
       cn.appendChild(cbn); body.appendChild(cn);
     }
-    if (!fp.loading && !fp.err && !fp.needConsent && !list.length) body.appendChild(el("div", "note", isLog && fp.q ? "No emails match that search." : "No emails in this folder."));
+    if (!fp.loading && !fp.err && !fp.needConsent && !list.length) body.appendChild(el("div", "note", isHist && (fp.q || fp.person) ? "No emails match."  : "No emails in this folder."));
     var lastGroup = "";
-    var shownList = isLog ? list.slice(0, fp.shown || 200) : list;   // long logs render 200 rows at a time to stay quick
+    var shownList = isHist ? list.slice(0, fp.shown || 200) : list;   // long logs render 200 rows at a time to stay quick
     shownList.forEach(function (it) {
-      var g = isLog ? logGroup(it.when) : groupLabel(it.when); if (g !== lastGroup) { body.appendChild(el("div", "vgroup", g)); lastGroup = g; }
+      var g = isHist ? logGroup(it.when) : groupLabel(it.when); if (g !== lastGroup) { body.appendChild(el("div", "vgroup", g)); lastGroup = g; }
       var unread = it.isRead === false, row = el("button", "vrow" + (unread ? " unread" : "") + (fp.sel === it.mid ? " sel" : "")); row.type = "button";
       row.dataset.mid = it.mid; if (fp.sel === it.mid) row.setAttribute("aria-current", "true");
-      var av = el("div", "vav", (it.sender.replace(/[^A-Za-z0-9]/g, "").charAt(0) || "?").toUpperCase()); av.setAttribute("aria-hidden", "true");
+      var av = el("div", "vav", (String(it.avSrc || it.sender).replace(/[^A-Za-z0-9]/g, "").charAt(0) || "?").toUpperCase()); av.setAttribute("aria-hidden", "true");
       var main = el("div", "vmain"), l1 = el("div", "vl1"), l2 = el("div", "vl2");
       l1.appendChild(el("span", "vsender", it.sender)); l1.appendChild(el("span", "vtime", mailTime(it.when)));
       l2.appendChild(el("span", "vsubj", it.subject)); if (it.hasAtt) l2.appendChild(clipIcon());
@@ -1513,16 +1610,16 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       row.addEventListener("click", function () { selectRow(it, row); });
       body.appendChild(row);
     });
-    if (!isLog && count > fp.items.length && fp.items.length) body.appendChild(el("div", "note", "Showing the newest " + fp.items.length + " of " + count + "."));
-    if (isLog && list.length > shownList.length) {
+    if (!isHist && count > fp.items.length && fp.items.length) body.appendChild(el("div", "note", "Showing the newest " + fp.items.length + " of " + count + "."));
+    if (isHist && list.length > shownList.length) {
       var sm = el("button", "", "Show " + Math.min(200, list.length - shownList.length) + " more (" + (list.length - shownList.length) + " not shown)"); sm.type = "button"; sm.style.margin = "10px 8px";
       sm.addEventListener("click", function () { fp.shown = (fp.shown || 200) + 200; fillFolderPanel(); });
       body.appendChild(sm);
     }
     if (isLog && fp.truncated) body.appendChild(el("div", "note", "This log has more than " + LOG_ALL_CAP + " emails and SharePoint can\u2019t sort them, so only the first " + LOG_ALL_CAP + " files (by name) were loaded. Some recent emails may be missing."));
-    if (isLog && fp.next && !fp.loading && !fp.searching) {
+    if (isHist && fp.next && !fp.loading && !fp.searching) {
       var more = el("button", "", "Load older emails"); more.type = "button"; more.style.margin = "10px 8px";
-      more.addEventListener("click", function () { more.disabled = true; loadLog(true); });
+      more.addEventListener("click", function () { more.disabled = true; loadHistMore(); });
       body.appendChild(more);
     }
     body.scrollTop = keep;
@@ -1553,7 +1650,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     if (sel) { fp.sel = sel.mid; openMessage(sel, true); }   // the email you clicked opens straight away; its row highlights once the list arrives
     loadFolder(false);
   }
-  function reloadFolder() { if (fp.open && fp.mode !== "log") loadFolder(true); }
+  function reloadFolder() { if (fp.open && (!fp.mode || fp.mode === "mail")) loadFolder(true); }
   function folderItemGone(it) {
     if (!fp.open) return;
     fp.items = fp.items.filter(function (x) { return x.mid !== it.mid; });
@@ -1581,15 +1678,26 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     var f = (x.listItem && x.listItem.fields) || {}, name = x.name || "";
     var sender = String(f.EmailFrom || f.From || guessFrom(name) || ""), to = String(f.EmailTo || "");
     var cust = typeof f.Customer === "string" ? f.Customer : ((f.Customer && (f.Customer.Value || f.Customer.LookupValue)) || "");
-    var by = (x.createdBy && x.createdBy.user && x.createdBy.user.displayName) || "", subject = String(f.Title || guessSubject(name));
+    var by = (x.createdBy && x.createdBy.user && x.createdBy.user.displayName) || "", byEmail = (x.createdBy && x.createdBy.user && x.createdBy.user.email) || "", subject = String(f.Title || guessSubject(name));
     var preview = [cust, to && "To: " + to].filter(Boolean).join(" \u00b7 "), logged = by ? "Logged by " + by : "";
-    return { id: x.id, mid: x.id, dl: x["@microsoft.graph.downloadUrl"] || "", name: name, subject: subject, title: subject, sender: sender || "Unknown sender", preview: preview, logged: logged,
+    return { id: x.id, mid: x.id, dl: x["@microsoft.graph.downloadUrl"] || "", name: name, subject: subject, title: subject, sender: sender || "Unknown sender", preview: preview, logged: logged, by: by, byEmail: byEmail, fromAddr: String(f.EmailFrom || f.From || guessFrom(name) || ""),
       when: new Date(x.createdDateTime || 0), isRead: true, hasAtt: false, url: safeUrl(x.webUrl),
-      hay: [name, subject, sender, to, cust, by].join(" ").toLowerCase() };
+      hay: [name, subject, sender, to, cust, by, byEmail].join(" ").toLowerCase() };
+  }
+  function personTokens() {
+    var toks = String(fp.person || "").toLowerCase().split(/[,;]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+    var mine = String((me && me.mail) || (account && account.username) || "").toLowerCase();
+    if (me && me.displayName && mine && toks.indexOf(mine) >= 0) toks.push(String(me.displayName).toLowerCase());   // the log shows who logged an email by name
+    return toks;
+  }
+  function personMatch(it, toks) {
+    var by = String(it.by || "").toLowerCase(), be = String(it.byEmail || "").toLowerCase(), fr = String(it.fromAddr || "").toLowerCase();
+    return toks.some(function (t) { return fr === t || be === t || (by.length > 3 && t.length > 3 && (by.indexOf(t) >= 0 || t.indexOf(by) >= 0)); });
   }
   function logView() {
-    var q = String(fp.q || "").trim().toLowerCase();
-    return q ? fp.items.filter(function (it) { return it.hay.indexOf(q) >= 0; }) : fp.items;
+    var q = String(fp.q || "").trim().toLowerCase(), list = fp.items;
+    if (fp.person) { var toks = personTokens(); list = list.filter(function (it) { return personMatch(it, toks); }); }
+    return q ? list.filter(function (it) { return it.hay.indexOf(q) >= 0; }) : list;
   }
   // SharePoint doesn't reliably sort a folder's files, and can't filter them by date. So: ask for newest-modified first and CHECK the answer;
   // if the order didn't come back right, load the whole folder (up to a limit) and sort it here so the newest emails are never missed.
@@ -1648,21 +1756,61 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     fp.loading = false; fillFolderPanel();
   }
   var LOG_SEARCH_CAP = 1000;
+  function loadHistMore() { return fp.mode === "hist" ? loadMailHist(true) : loadLog(true); }
   async function searchAll() {
     if (fp.pagingAll) return;
     fp.pagingAll = true; fp.searching = !!fp.next; fillFolderPanel();
     try {
       var guard = 0;   // safety net: never more than 30 pages in one search
-      while (guard++ < 30 && fp.open && fp.mode === "log" && String(fp.q || "").trim() && fp.next && fp.items.length < LOG_SEARCH_CAP && !fp.err && !fp.needConsent) await loadLog(true);
+      while (guard++ < 30 && fp.open && (fp.mode === "log" || fp.mode === "hist") && (String(fp.q || "").trim() || fp.person) && fp.next && fp.items.length < LOG_SEARCH_CAP && !fp.err && !fp.needConsent) await loadHistMore();
     } finally { fp.pagingAll = false; fp.searching = false; if (fp.open) fillFolderPanel(); }
   }
-  function openLog(focusKey) {
+  function openHistory(kind, focusKey) {
+    if (kind === "log") openLog(focusKey, "");
+    else if (kind === "logperson") openLog(focusKey, cfg.logPerson);
+    else if (kind === "mail") openMailHistory(focusKey);
+    else if (kind === "trello") openTrelloHistory(focusKey);
+  }
+  function openLog(focusKey, person) {
     lastFocus = document.activeElement; lastFocusFid = focusKey || "";
-    fp = { open: true, folder: { full: "Support Log", name: "Support Log" }, items: [], err: null, loading: true, seq: fp.seq, sel: null, mode: "log", next: null, q: "", needConsent: false };
+    var who = String(person || "").trim(), first = who.split(/[,;]/)[0].trim();
+    fp = { open: true, folder: { full: "Support Log" + (first ? " \u00b7 " + first : ""), name: "Support Log" }, items: [], err: null, loading: true, seq: fp.seq, sel: null, mode: "log", next: null, q: "", needConsent: false, person: who, personLabel: who.length > 40 ? who.slice(0, 38) + "\u2026" : who };
     setSplit(true); showEmptyReading(); $("vread").classList.add("logmode");
-    var s = $("vlSearch"); s.hidden = false; s.value = "";
+    var s = $("vlSearch"); s.hidden = false; s.value = ""; s.placeholder = "Search the log\u2026"; s.setAttribute("aria-label", "Search the support log");
     fillFolderPanel(); $("reader").hidden = false; s.focus();
-    loadLog(false);
+    loadLog(false).then(function () { if (fp.person && fp.open) searchAll(); });   // a person's history needs older pages too, so keep loading (up to the limit)
+  }
+  async function loadMailHist(more) {
+    var seq = ++fp.seq;
+    if (!more) { fp.loading = true; fp.err = null; fp.srcs = { inbox: { next: null }, sentitems: { next: null } }; }
+    fillFolderPanel();
+    try {
+      var sel = "$select=subject,from,toRecipients,isRead,webLink,receivedDateTime,bodyPreview,hasAttachments";
+      var got = await Promise.all(["inbox", "sentitems"].map(async function (k) {
+        var s = fp.srcs[k];
+        if (more && !s.next) return { k: k, value: [], next: null };
+        var path = more ? String(s.next).replace(GRAPH, "") : "/me/mailFolders/" + k + "/messages?$top=50&" + sel + "&$orderby=receivedDateTime desc";
+        var r = await gfetch(path);
+        return { k: k, value: r.value || [], next: r["@odata.nextLink"] || null };
+      }));
+      if (seq !== fp.seq || !fp.open) return;
+      var add = [];
+      got.forEach(function (g) { fp.srcs[g.k].next = g.next; add = add.concat(fpItems(g.value, "/me", g.k === "sentitems")); });
+      fp.items = (more ? fp.items.concat(add) : add).sort(function (a, b) { return b.when - a.when; });
+      fp.next = !!(fp.srcs.inbox.next || fp.srcs.sentitems.next);
+    } catch (e) {
+      if (seq !== fp.seq || !fp.open) return;
+      fp.err = errText(e);
+    }
+    fp.loading = false; fillFolderPanel();
+  }
+  function openMailHistory(focusKey) {   // everything you sent or received: Inbox and Sent Items together, newest first
+    lastFocus = document.activeElement; lastFocusFid = focusKey || "";
+    fp = { open: true, folder: { full: "My Inbox \u00b7 sent & received", name: "My Inbox history" }, items: [], err: null, loading: true, seq: fp.seq, sel: null, mode: "hist", next: false, q: "", person: "" };
+    setSplit(true); showEmptyReading(); $("vread").classList.remove("logmode");
+    var s = $("vlSearch"); s.hidden = false; s.value = ""; s.placeholder = "Search sent & received\u2026"; s.setAttribute("aria-label", "Search sent and received email");
+    fillFolderPanel(); $("reader").hidden = false; s.focus();
+    loadMailHist(false);
   }
   async function fetchEml(it) {
     if (it.dl) { try { var r = await fetch(it.dl); if (r.ok) return new Uint8Array(await r.arrayBuffer()); } catch (e) { /* fall back to the Graph route */ } }
@@ -1689,7 +1837,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   }
   function wireReader() {
     var sT = null;
-    $("vlSearch").addEventListener("input", function () { clearTimeout(sT); sT = setTimeout(function () { fp.q = $("vlSearch").value; fp.shown = 200; fillFolderPanel(); if (fp.mode === "log" && fp.q.trim()) searchAll(); }, 120); });
+    $("vlSearch").addEventListener("input", function () { clearTimeout(sT); sT = setTimeout(function () { fp.q = $("vlSearch").value; fp.shown = 200; fillFolderPanel(); if ((fp.mode === "log" || fp.mode === "hist") && fp.q.trim()) searchAll(); }, 120); });
     $("vlSearch").addEventListener("keydown", function (ev) { if (ev.key === "ArrowDown") { var r = $("vlBody").querySelector(".vrow"); if (r) { ev.preventDefault(); r.focus(); } } });
     $("vlBody").addEventListener("keydown", function (ev) {   // up/down arrows step through the list like in Outlook
       if (ev.key !== "ArrowDown" && ev.key !== "ArrowUp") return;
@@ -1700,6 +1848,8 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       ev.preventDefault(); n.focus(); if (n.scrollIntoView) n.scrollIntoView({ block: "nearest" });
       clearTimeout(selTimer); selTimer = setTimeout(function () { if (document.activeElement === n) n.click(); }, 160);
     });
+    var tT = null;
+    $("tlSearch").addEventListener("input", function () { clearTimeout(tT); tT = setTimeout(function () { th.q = $("tlSearch").value; fillTrelloHistory(); if (th.q.trim()) searchTrelloAll(); }, 120); });
     $("tlClose").addEventListener("click", closeTrelloPanel);
     $("tlpanel").addEventListener("click", function (ev) { if (ev.target === $("tlpanel")) closeTrelloPanel(); });
     document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !$("tlpanel").hidden) closeTrelloPanel(); });
@@ -1723,7 +1873,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     $("sName").value = cfg.name; $("sClient").value = cfg.clientId; $("sTenant").value = cfg.tenantId; $("sRefresh").value = cfg.refresh;
     $("sShared").value = cfg.shared; $("sFolder").value = cfg.folder; $("sFolderIn").value = cfg.folderIn;
     $("bSupport").checked = cfg.badge.support; $("bFolder").checked = cfg.badge.folder; $("bPersonal").checked = cfg.badge.personal;
-    $("bCalendar").checked = cfg.badge.calendar; $("bTeam").checked = cfg.badge.team; $("bTrello").checked = cfg.badge.trello; $("sTrelloKey").value = cfg.trelloKey; $("sTrelloToken").value = cfg.trelloToken; $("sTrelloList").value = cfg.trelloAssignList; $("sTrelloBoards").value = cfg.trelloAssignBoards; $("sImgAllow").value = cfg.imageAllow; $("sLogSite").value = cfg.logSite; $("sLogFolder").value = cfg.logFolder; $("sPrefix").value = cfg.teamPrefix;
+    $("bCalendar").checked = cfg.badge.calendar; $("bTeam").checked = cfg.badge.team; $("bTrello").checked = cfg.badge.trello; $("sTrelloKey").value = cfg.trelloKey; $("sTrelloToken").value = cfg.trelloToken; $("sTrelloList").value = cfg.trelloAssignList; $("sTrelloBoards").value = cfg.trelloAssignBoards; $("sImgAllow").value = cfg.imageAllow; $("sLogSite").value = cfg.logSite; $("sLogFolder").value = cfg.logFolder; $("sLogPerson").value = cfg.logPerson; $("sPrefix").value = cfg.teamPrefix;
   }
   function syncNotifyBtn() {
     var b = $("btnNotify"), on = notifyOn();
@@ -1755,7 +1905,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       cfg.name = $("sName").value.trim() || "Work Dashboard"; cfg.clientId = $("sClient").value.trim(); cfg.tenantId = $("sTenant").value.trim();
       var r = parseInt($("sRefresh").value, 10); cfg.refresh = r >= 10 && r <= 900 ? r : 15; cfg.teamPrefix = $("sPrefix").value.trim() || "Support";
       cfg.shared = $("sShared").value.trim(); cfg.folder = $("sFolder").value.trim(); cfg.folderIn = $("sFolderIn").value;
-      cfg.badge = { support: $("bSupport").checked, folder: $("bFolder").checked, personal: $("bPersonal").checked, calendar: $("bCalendar").checked, team: $("bTeam").checked, trello: $("bTrello").checked }; cfg.trelloKey = $("sTrelloKey").value.trim(); cfg.trelloToken = $("sTrelloToken").value.trim(); cfg.trelloAssignList = $("sTrelloList").value.trim(); cfg.trelloAssignBoards = $("sTrelloBoards").value.trim(); cfg.imageAllow = $("sImgAllow").value.trim(); cfg.logSite = $("sLogSite").value.trim(); cfg.logFolder = $("sLogFolder").value.trim();
+      cfg.badge = { support: $("bSupport").checked, folder: $("bFolder").checked, personal: $("bPersonal").checked, calendar: $("bCalendar").checked, team: $("bTeam").checked, trello: $("bTrello").checked }; cfg.trelloKey = $("sTrelloKey").value.trim(); cfg.trelloToken = $("sTrelloToken").value.trim(); cfg.trelloAssignList = $("sTrelloList").value.trim(); cfg.trelloAssignBoards = $("sTrelloBoards").value.trim(); cfg.imageAllow = $("sImgAllow").value.trim(); cfg.logSite = $("sLogSite").value.trim(); cfg.logFolder = $("sLogFolder").value.trim(); cfg.logPerson = $("sLogPerson").value.trim();
       saveCfg(); location.reload();
     });
     $("btnAuth").addEventListener("click", function () {
