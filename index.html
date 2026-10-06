@@ -1638,6 +1638,14 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     if (isLog && fp.truncated) body.appendChild(el("div", "note", "This log has more than " + LOG_ALL_CAP + " emails and SharePoint can\u2019t sort them, so only the first " + LOG_ALL_CAP + " files (by name) were loaded. Some recent emails may be missing."));
     if (isHist) syncRange();
     body.scrollTop = keep;
+    if (fp.autoFirst && !fp.loading && !fp.paging) autoSelectFirst();
+  }
+  function autoSelectFirst() {   // once, when the list first has something to show
+    var row = $("vlBody").querySelector(".vrow");
+    if (!fp.open || fp.sel || !row) return;
+    fp.autoFirst = false;
+    var it = fp.items.filter(function (x) { return String(x.mid) === row.dataset.mid; })[0];
+    if (it) selectRow(it, row);
   }
   async function loadFolder(silent) {
     var f = fp.folder, seq = ++fp.seq;
@@ -1659,7 +1667,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   }
   function openFolder(p, sel) {
     lastFocus = document.activeElement; lastFocusFid = p.focusKey || p.id || "";
-    fp = { open: true, folder: p, items: [], err: null, loading: true, seq: fp.seq, sel: null, mode: "mail" };
+    fp = { open: true, folder: p, items: [], err: null, loading: true, seq: fp.seq, sel: null, mode: "mail", autoFirst: !sel };
     setSplit(true); $("vread").classList.remove("logmode"); $("vlSearch").hidden = true; $("vlRange").hidden = true; showEmptyReading(); fillFolderPanel();
     $("reader").hidden = false; $("vlBody").focus();
     if (sel) { fp.sel = sel.mid; openMessage(sel, true); }   // the email you clicked opens straight away; its row highlights once the list arrives
@@ -1805,7 +1813,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   function openLog(focusKey, person) {
     lastFocus = document.activeElement; lastFocusFid = focusKey || "";
     var who = String(person || "").trim(), first = who.split(/[,;]/)[0].trim();
-    fp = { open: true, folder: { full: "Support Log" + (first ? " \u00b7 " + first : ""), name: "Support Log" }, items: [], err: null, loading: true, seq: fp.seq, sel: null, mode: "log", next: null, q: "", needConsent: false, range: "n100", person: who, personLabel: who.length > 40 ? who.slice(0, 38) + "\u2026" : who };
+    fp = { open: true, folder: { full: "Support Log" + (first ? " \u00b7 " + first : ""), name: "Support Log" }, items: [], err: null, loading: true, seq: fp.seq, sel: null, mode: "log", next: null, q: "", needConsent: false, range: "n100", autoFirst: true, person: who, personLabel: who.length > 40 ? who.slice(0, 38) + "\u2026" : who };
     setSplit(true); showEmptyReading(); $("vread").classList.add("logmode");
     var s = $("vlSearch"); s.hidden = false; s.value = ""; s.placeholder = "Search the log\u2026"; s.setAttribute("aria-label", "Search the support log"); $("vlRange").hidden = false;
     fillFolderPanel(); $("reader").hidden = false; s.focus();
@@ -1840,7 +1848,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   }
   function openMailHistory(focusKey) {   // everything you sent or received: Inbox and Sent Items together, newest first
     lastFocus = document.activeElement; lastFocusFid = focusKey || "";
-    fp = { open: true, folder: { full: "My Inbox \u00b7 sent & received", name: "My Inbox history" }, items: [], err: null, loading: true, seq: fp.seq, sel: null, mode: "hist", next: false, q: "", person: "", range: "n100" };
+    fp = { open: true, folder: { full: "My Inbox \u00b7 sent & received", name: "My Inbox history" }, items: [], err: null, loading: true, seq: fp.seq, sel: null, mode: "hist", next: false, q: "", person: "", range: "n100", autoFirst: true };
     setSplit(true); showEmptyReading(); $("vread").classList.remove("logmode");
     var s = $("vlSearch"); s.hidden = false; s.value = ""; s.placeholder = "Search sent & received\u2026"; s.setAttribute("aria-label", "Search sent and received email"); $("vlRange").hidden = false;
     fillFolderPanel(); $("reader").hidden = false; s.focus();
@@ -1881,8 +1889,10 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     $("vlBody").addEventListener("keydown", function (ev) {   // up/down arrows step through the list like in Outlook
       if (ev.key !== "ArrowDown" && ev.key !== "ArrowUp") return;
       var rows = [].slice.call($("vlBody").querySelectorAll(".vrow")), i = rows.indexOf(document.activeElement), n;
-      if (i < 0) { n = rows[0]; if (!n) return; }
-      else n = rows[i + (ev.key === "ArrowDown" ? 1 : -1)];
+      if (i < 0) {   // focus is on the list itself: continue from the email that is already open, or start at the top
+        var si = rows.findIndex(function (r) { return r.getAttribute("aria-current") === "true"; });
+        n = si >= 0 ? rows[si + (ev.key === "ArrowDown" ? 1 : -1)] : rows[0]; if (!n) return;
+      } else n = rows[i + (ev.key === "ArrowDown" ? 1 : -1)];
       if (!n) return;
       ev.preventDefault(); n.focus(); if (n.scrollIntoView) n.scrollIntoView({ block: "nearest" });
       clearTimeout(selTimer); selTimer = setTimeout(function () { if (document.activeElement === n) n.click(); }, 160);
