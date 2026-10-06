@@ -816,7 +816,11 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         a.style.cursor = "pointer";
         a.addEventListener("click", function (ev) {
           if (ev.button !== 0 || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) return;   // ctrl/middle-click still opens Outlook on the web
-          ev.preventDefault(); openMessage(it);
+          ev.preventDefault();
+          if (t.folderRef) {   // open the whole folder (list + reading pane) with this email already selected
+            var tk = Object.keys(tiles).filter(function (k) { return tiles[k] === t; })[0] || "";
+            openFolder({ base: t.folderRef.base, id: t.folderRef.id, full: t.title, name: t.title, count: t.count, focusKey: "tile-" + tk }, it);
+          } else openMessage(it);
         });
       }
       a.appendChild(el("span", "s", it.title));
@@ -1028,7 +1032,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     if (busy || !msalApp) return;
     if (Date.now() < pauseUntil) { $("status").textContent = "Microsoft asked us to slow down; resuming in " + Math.ceil((pauseUntil - Date.now()) / 1000) + "s"; return; }
     if (!account) { needSignIn = true; updateIndicators(); return; }
-    busy = true; needSignIn = false; $("btnRefresh").disabled = true; $("btnRefresh").classList.add("spinning"); $("status").textContent = "Refreshing\u2026";
+    busy = true; needSignIn = false; $("btnRefresh").disabled = true; $("btnRefresh").classList.add("spinning");
     var stamp = new Date(Math.floor(Date.now() / 1000) * 1000);   // the moment this refresh started, so on-the-clock refreshes read :00, :10, :20
     var keys = Object.keys(tiles);
     keys.forEach(function (k) {
@@ -1298,11 +1302,12 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     $("rdImgBar").hidden = true; $("vread").classList.add("empty");
     $("vlBody").querySelectorAll(".vrow.sel").forEach(function (r) { r.classList.remove("sel"); r.removeAttribute("aria-current"); });
   }
-  function openFolder(p) {
+  function openFolder(p, sel) {
     lastFocus = document.activeElement; lastFocusFid = p.focusKey || p.id || "";
     fp = { open: true, folder: p, items: [], err: null, loading: true, seq: fp.seq, sel: null };
     setSplit(true); showEmptyReading(); fillFolderPanel();
     $("reader").hidden = false; $("vlBody").focus();
+    if (sel) { fp.sel = sel.mid; openMessage(sel, true); }   // the email you clicked opens straight away; its row highlights once the list arrives
     loadFolder(false);
   }
   function reloadFolder() { if (fp.open) loadFolder(true); }
