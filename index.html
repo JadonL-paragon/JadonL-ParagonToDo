@@ -11,15 +11,14 @@
 <style>
   :root {
     --bg: #f5f6f8; --card: #ffffff; --text: #1c2430; --muted: #5a6676; --line: #e1e5ea;
-    --accent: #2f6fed; --good: #1a8f4c; --warn: #9a5b00; --orange: #c96a00; --bad: #c43b3b;
+    --accent: #2f6fed; --good: #1a8f4c; --warn: #9a5b00; --orange: #c96a00; --bad: #c43b3b; --on-accent: #ffffff;
     box-sizing: border-box;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #12161c; --card: #1b2129; --text: #e7ebf0; --muted: #98a3b3; --line: #2b333e;
-      --accent: #6f9cff; --good: #4cc27e; --warn: #e0a43a; --orange: #f0983a; --bad: #ef7676;
+      --accent: #6f9cff; --good: #4cc27e; --warn: #e0a43a; --orange: #f0983a; --bad: #ef7676; --on-accent: #0b1220;
     }
-    button.primary { color: #0b1220; }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
@@ -31,10 +30,15 @@
   #brandLogo { height: 38px; width: auto; display: block; }
   .sub { color: var(--muted); font-size: 13px; }
   .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .iconbtn { width: 36px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+  .iconbtn svg { display: block; }
+  .iconbtn.spinning svg { animation: sp 0.9s linear infinite; }
+  @media (prefers-reduced-motion: reduce) { .iconbtn.spinning svg { animation: none; } }
+  .acct { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
   button { font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--line);
     padding: 7px 12px; border-radius: 8px; cursor: pointer; }
   button:hover { border-color: var(--accent); }
-  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
   button:disabled { opacity: .55; cursor: default; }
   .grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 10px; }
   .tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px 12px; min-width: 0; display: flex; flex-direction: column; }
@@ -171,16 +175,23 @@
       </div>
     </div>
     <div class="actions">
-      <button id="btnAuth" class="primary" style="display:none">Sign in</button>
-      <button id="btnNotify">Notifications: Off</button>
-      <button id="btnSettings">Settings</button>
-      <button id="btnRefresh">Refresh</button>
+      <button id="btnSettings" class="iconbtn" title="Settings" aria-label="Settings" aria-expanded="false" aria-controls="settings">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+      <button id="btnRefresh" class="iconbtn" title="Refresh now" aria-label="Refresh now">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
     </div>
   </header>
 
   <div id="banner"></div>
 
   <section id="settings">
+    <div class="acct">
+      <span class="rlabel">Account &amp; alerts</span>
+      <button id="btnNotify">Notifications: Off</button>
+      <button id="btnAuth" style="display:none">Sign in</button>
+    </div>
     <p class="hint">Saved in this browser only. Register this exact redirect URI in Entra as a <b>Single-page application</b>: <code id="redirectShown"></code></p>
     <div class="row">
       <div><label for="sName">Dashboard name</label><input id="sName" type="text" maxlength="40"></div>
@@ -794,8 +805,6 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       if (t.items && t.items.length && t.kind !== "trello") {
         box.appendChild(itemList(t));
         if (t.kind === "mail" && t.count > t.items.length) box.appendChild(el("div", "note", "Showing the newest " + t.items.length + " of " + t.count + "."));
-      } else if (t.kind === "mail" && t.count === 0 && t.state !== "error") {
-        var em = el("div", "empty"); em.appendChild(el("b", null, "\u2713")); em.appendChild(document.createTextNode("All clear")); box.appendChild(em);
       }
     }
     return box;
@@ -913,7 +922,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     if (busy || !msalApp) return;
     if (Date.now() < pauseUntil) { $("status").textContent = "Microsoft asked us to slow down; resuming in " + Math.ceil((pauseUntil - Date.now()) / 1000) + "s"; return; }
     if (!account) { needSignIn = true; updateIndicators(); return; }
-    busy = true; needSignIn = false; $("btnRefresh").disabled = true; $("status").textContent = "Refreshing\u2026";
+    busy = true; needSignIn = false; $("btnRefresh").disabled = true; $("btnRefresh").classList.add("spinning"); $("status").textContent = "Refreshing\u2026";
     var stamp = new Date(Math.floor(Date.now() / 1000) * 1000);   // the moment this refresh started, so on-the-clock refreshes read :00, :10, :20
     var keys = Object.keys(tiles);
     keys.forEach(function (k) {
@@ -934,7 +943,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     else $("banner").style.display = "none";
     render(); updateIndicators();
     $("status").textContent = "Updated " + stamp.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
-    $("btnRefresh").disabled = false; busy = false;
+    $("btnRefresh").disabled = false; $("btnRefresh").classList.remove("spinning"); busy = false;
   }
   function startTimer() {
     if (timer) clearTimeout(timer);
@@ -1131,7 +1140,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         showBanner("Notifications are blocked for this site. Allow them from the site settings icon next to the address bar, then press the button again.");
       }
     });
-    $("btnSettings").addEventListener("click", function () { $("settings").classList.toggle("open"); });
+    $("btnSettings").addEventListener("click", function () { var open = $("settings").classList.toggle("open"); $("btnSettings").setAttribute("aria-expanded", open ? "true" : "false"); });
     $("btnRefresh").addEventListener("click", refresh);
     $("btnSave").addEventListener("click", function () {
       cfg.name = $("sName").value.trim() || "Work Dashboard"; cfg.clientId = $("sClient").value.trim(); cfg.tenantId = $("sTenant").value.trim();
@@ -1160,7 +1169,8 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     catch (e) { showBanner("Sign-in setup failed: " + ((e && e.message) || e)); $("status").textContent = "Error"; return; }
     var ab = $("btnAuth"); ab.style.display = "";
     if (!account) {
-      ab.textContent = "Sign in"; $("status").textContent = "Not signed in";
+      ab.textContent = "Sign in"; ab.className = "primary"; $("status").textContent = "Not signed in";
+      showBanner("You\u2019re not signed in to Microsoft.", "Sign in", signIn);
       Object.keys(tiles).forEach(function (k) { tiles[k].state = "need"; tiles[k].msg = "Sign in to load this."; });
       needSignIn = true; render(); updateIndicators(); return;
     }
