@@ -119,6 +119,10 @@
   .histbtn { display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px 3px 9px; border-radius: 999px; font-size: 12.5px; font-weight: 600; }
   .histbtn svg { color: var(--accent); }
   .histbtn.iconly { padding: 0; width: 26px; height: 26px; justify-content: center; gap: 0; }
+  .ranges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .ranges[hidden] { display: none; }
+  .rng { padding: 3px 7px; font-size: 12px; border-radius: 999px; white-space: nowrap; }
+  .rng[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
   #vlSearch, #tlSearch { width: 100%; margin-top: 8px; }
   #tlSearch[hidden], #tlSub[hidden] { display: none; }
   a.vrow { text-decoration: none; }
@@ -318,7 +322,7 @@
   <div class="panel rpanel" role="dialog" aria-modal="true" aria-label="Email">
     <div class="vsplit">
       <aside id="vlist" class="vlist" hidden aria-label="Emails in this folder">
-        <div class="vlhead"><div id="vlTitle" class="vlt"></div><div id="vlSub" class="vls"></div><input id="vlSearch" type="search" placeholder="Search the log…" aria-label="Search the support log" autocomplete="off" hidden></div>
+        <div class="vlhead"><div id="vlTitle" class="vlt"></div><div id="vlSub" class="vls"></div><input id="vlSearch" type="search" placeholder="Search the log…" aria-label="Search the support log" autocomplete="off" hidden><div id="vlRange" class="ranges" role="group" aria-label="How far back to show" hidden></div></div>
         <div id="vlBody" class="vlbody" tabindex="-1"></div>
       </aside>
       <section id="vread" class="vread">
@@ -1517,7 +1521,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   function setSplit(on) {
     $("reader").querySelector(".rpanel").classList.toggle("split", on);
     $("vlist").hidden = !on;
-    if (!on) { $("vread").classList.remove("empty"); $("vread").classList.remove("logmode"); $("vlSearch").hidden = true; }
+    if (!on) { $("vread").classList.remove("empty"); $("vread").classList.remove("logmode"); $("vlSearch").hidden = true; $("vlRange").hidden = true; }
   }
   function mailTime(d) {
     var now = new Date(), sod = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -1569,13 +1573,23 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     if (a.getFullYear() === b.getFullYear()) return a.toLocaleDateString([], md) + " \u2013 " + b.toLocaleDateString([], Object.assign({}, md, yr));
     return a.toLocaleDateString([], Object.assign({}, md, yr)) + " \u2013 " + b.toLocaleDateString([], Object.assign({}, md, yr));
   }
+  var HIST_CAP = 3000, PERSON_SCAN_CAP = 1000, RANGES = [["n100", "Newest 100"], [30, "30 days"], [60, "60 days"], [90, "90 days"], [180, "180 days"]];
+  function rangeCutoff() { return typeof fp.range === "number" ? Date.now() - fp.range * 86400000 : 0; }
+  function rangeLabel() { return typeof fp.range === "number" ? "last " + fp.range + " days" : "newest 100"; }
   function logSubtitle(list) {
     var q = String(fp.q || "").trim(), n = list.length, who = fp.person ? " \u00b7 " + fp.personLabel : "";
     if (fp.loading) return "Loading\u2026";
-    if (!q && !fp.person) return fp.items.length + " email" + (fp.items.length === 1 ? "" : "s") + (fp.next ? " loaded \u00b7 more available" : (fp.truncated ? " loaded \u00b7 the log is larger" : ""));
-    var head = n === 0 ? "No matches" : n + (q ? " match" + (n === 1 ? "" : "es") : " email" + (n === 1 ? "" : "s")) + " \u00b7 " + dateRange(list) + who;
-    if (fp.searching) return head + " \u00b7 searching older emails\u2026";
-    return head + " \u00b7 searched " + (fp.next ? "the newest " : (fp.truncated ? "the first " : "all ")) + fp.items.length;
+    var s = n === 0 ? (q ? "No matches" : "No emails") + " \u00b7 " + rangeLabel() + who
+      : n + (q ? " match" + (n === 1 ? "" : "es") : " email" + (n === 1 ? "" : "s")) + " \u00b7 " + rangeLabel() + " \u00b7 " + dateRange(list) + who;
+    if (fp.paging) s += " \u00b7 loading older\u2026";
+    else if (fp.capped) s += " \u00b7 limit of " + HIST_CAP + " reached";
+    return s;
+  }
+  function syncRange() {   // highlight the chosen range; the buttons stay put so keyboard focus is never lost
+    var busy = !!(fp.loading || fp.paging);
+    $("vlRange").querySelectorAll("button").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.r === String(fp.range))); b.disabled = busy && b.dataset.r !== String(fp.range) ? true : false;
+    });
   }
   function fillFolderPanel() {
     var f = fp.folder, body = $("vlBody"); if (!f) return;
@@ -1617,11 +1631,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       body.appendChild(sm);
     }
     if (isLog && fp.truncated) body.appendChild(el("div", "note", "This log has more than " + LOG_ALL_CAP + " emails and SharePoint can\u2019t sort them, so only the first " + LOG_ALL_CAP + " files (by name) were loaded. Some recent emails may be missing."));
-    if (isHist && fp.next && !fp.loading && !fp.searching) {
-      var more = el("button", "", "Load older emails"); more.type = "button"; more.style.margin = "10px 8px";
-      more.addEventListener("click", function () { more.disabled = true; loadHistMore(); });
-      body.appendChild(more);
-    }
+    if (isHist) syncRange();
     body.scrollTop = keep;
   }
   async function loadFolder(silent) {
@@ -1645,7 +1655,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   function openFolder(p, sel) {
     lastFocus = document.activeElement; lastFocusFid = p.focusKey || p.id || "";
     fp = { open: true, folder: p, items: [], err: null, loading: true, seq: fp.seq, sel: null, mode: "mail" };
-    setSplit(true); $("vread").classList.remove("logmode"); $("vlSearch").hidden = true; showEmptyReading(); fillFolderPanel();
+    setSplit(true); $("vread").classList.remove("logmode"); $("vlSearch").hidden = true; $("vlRange").hidden = true; showEmptyReading(); fillFolderPanel();
     $("reader").hidden = false; $("vlBody").focus();
     if (sel) { fp.sel = sel.mid; openMessage(sel, true); }   // the email you clicked opens straight away; its row highlights once the list arrives
     loadFolder(false);
@@ -1697,6 +1707,8 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   function logView() {
     var q = String(fp.q || "").trim().toLowerCase(), list = fp.items;
     if (fp.person) { var toks = personTokens(); list = list.filter(function (it) { return personMatch(it, toks); }); }
+    if (typeof fp.range === "number") { var c = rangeCutoff(); list = list.filter(function (it) { return it.when.getTime() >= c; }); }
+    else list = list.slice(0, 100);                                   // the default: just the newest 100
     return q ? list.filter(function (it) { return it.hay.indexOf(q) >= 0; }) : list;
   }
   // SharePoint doesn't reliably sort a folder's files, and can't filter them by date. So: ask for newest-modified first and CHECK the answer;
@@ -1755,15 +1767,29 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     }
     fp.loading = false; fillFolderPanel();
   }
-  var LOG_SEARCH_CAP = 1000;
-  function loadHistMore() { return fp.mode === "hist" ? loadMailHist(true) : loadLog(true); }
-  async function searchAll() {
-    if (fp.pagingAll) return;
-    fp.pagingAll = true; fp.searching = !!fp.next; fillFolderPanel();
+  function logNeedsMore() {   // true while the pages loaded so far don't yet reach back as far as the chosen range
+    if (!fp.next || fp.items.length >= HIST_CAP) return false;
+    if (typeof fp.range === "number") {
+      var oldest = fp.items.length ? fp.items[fp.items.length - 1].when.getTime() : Infinity;
+      return oldest >= rangeCutoff() - 2 * 86400000;
+    }
+    if (!fp.person) return false;                                    // newest 100 of everyone: the first page is enough
+    if (fp.items.length >= PERSON_SCAN_CAP) return false;
+    var toks = personTokens(), mine = 0;
+    fp.items.forEach(function (it) { if (personMatch(it, toks)) mine++; });
+    return mine < 100;                                               // one person's newest 100 may need several pages of the shared log
+  }
+  async function ensureLog() {
+    var g = 0;
     try {
-      var guard = 0;   // safety net: never more than 30 pages in one search
-      while (guard++ < 30 && fp.open && (fp.mode === "log" || fp.mode === "hist") && (String(fp.q || "").trim() || fp.person) && fp.next && fp.items.length < LOG_SEARCH_CAP && !fp.err && !fp.needConsent) await loadHistMore();
-    } finally { fp.pagingAll = false; fp.searching = false; if (fp.open) fillFolderPanel(); }
+      while (g++ < 60 && fp.open && fp.mode === "log" && !fp.err && !fp.needConsent && logNeedsMore()) { fp.paging = true; fillFolderPanel(); await loadLog(true); }
+    } finally { fp.paging = false; fp.capped = !!(fp.next && fp.items.length >= HIST_CAP && typeof fp.range === "number"); if (fp.open) fillFolderPanel(); }
+  }
+  async function setRange(r) {
+    if (!fp.open || (fp.mode !== "log" && fp.mode !== "hist") || fp.range === r || fp.loading || fp.paging) return;
+    fp.range = r; fp.shown = 200; fp.capped = false;
+    if (fp.mode === "hist") await loadMailHist(); else await ensureLog();
+    syncRange();
   }
   function openHistory(kind, focusKey) {
     if (kind === "log") openLog(focusKey, "");
@@ -1774,30 +1800,33 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   function openLog(focusKey, person) {
     lastFocus = document.activeElement; lastFocusFid = focusKey || "";
     var who = String(person || "").trim(), first = who.split(/[,;]/)[0].trim();
-    fp = { open: true, folder: { full: "Support Log" + (first ? " \u00b7 " + first : ""), name: "Support Log" }, items: [], err: null, loading: true, seq: fp.seq, sel: null, mode: "log", next: null, q: "", needConsent: false, person: who, personLabel: who.length > 40 ? who.slice(0, 38) + "\u2026" : who };
+    fp = { open: true, folder: { full: "Support Log" + (first ? " \u00b7 " + first : ""), name: "Support Log" }, items: [], err: null, loading: true, seq: fp.seq, sel: null, mode: "log", next: null, q: "", needConsent: false, range: "n100", person: who, personLabel: who.length > 40 ? who.slice(0, 38) + "\u2026" : who };
     setSplit(true); showEmptyReading(); $("vread").classList.add("logmode");
-    var s = $("vlSearch"); s.hidden = false; s.value = ""; s.placeholder = "Search the log\u2026"; s.setAttribute("aria-label", "Search the support log");
+    var s = $("vlSearch"); s.hidden = false; s.value = ""; s.placeholder = "Search the log\u2026"; s.setAttribute("aria-label", "Search the support log"); $("vlRange").hidden = false;
     fillFolderPanel(); $("reader").hidden = false; s.focus();
-    loadLog(false).then(function () { if (fp.person && fp.open) searchAll(); });   // a person's history needs older pages too, so keep loading (up to the limit)
+    loadLog(false).then(function () { if (fp.open) ensureLog(); });   // one person\u2019s newest 100 can need several pages of the shared log
   }
-  async function loadMailHist(more) {
+  async function loadMailHist() {
     var seq = ++fp.seq;
-    if (!more) { fp.loading = true; fp.err = null; fp.srcs = { inbox: { next: null }, sentitems: { next: null } }; }
-    fillFolderPanel();
+    fp.loading = true; fp.err = null; fp.capped = false; fillFolderPanel();
     try {
       var sel = "$select=subject,from,toRecipients,isRead,webLink,receivedDateTime,bodyPreview,hasAttachments";
+      var days = typeof fp.range === "number" ? fp.range : 0, since = days ? new Date(Date.now() - days * 86400000).toISOString() : "";
       var got = await Promise.all(["inbox", "sentitems"].map(async function (k) {
-        var s = fp.srcs[k];
-        if (more && !s.next) return { k: k, value: [], next: null };
-        var path = more ? String(s.next).replace(GRAPH, "") : "/me/mailFolders/" + k + "/messages?$top=50&" + sel + "&$orderby=receivedDateTime desc";
-        var r = await gfetch(path);
-        return { k: k, value: r.value || [], next: r["@odata.nextLink"] || null };
+        var next = "/me/mailFolders/" + k + "/messages?$top=100&" + sel + (days ? "&$filter=receivedDateTime ge " + since : "") + "&$orderby=receivedDateTime desc", all = [], pages = 0, capped = false;
+        while (next && pages < 40) {
+          var r = await gfetch(String(next).replace(GRAPH, "")); pages++;
+          all = all.concat(r.value || []);
+          next = days && r["@odata.nextLink"] ? r["@odata.nextLink"] : null;     // the newest-100 view is just the first page
+          if (next && all.length >= HIST_CAP) { capped = true; break; }
+        }
+        return { k: k, value: all, capped: capped || !!next };
       }));
       if (seq !== fp.seq || !fp.open) return;
       var add = [];
-      got.forEach(function (g) { fp.srcs[g.k].next = g.next; add = add.concat(fpItems(g.value, "/me", g.k === "sentitems")); });
-      fp.items = (more ? fp.items.concat(add) : add).sort(function (a, b) { return b.when - a.when; });
-      fp.next = !!(fp.srcs.inbox.next || fp.srcs.sentitems.next);
+      got.forEach(function (g) { add = add.concat(fpItems(g.value, "/me", g.k === "sentitems")); fp.capped = fp.capped || g.capped; });
+      fp.items = add.sort(function (a, b) { return b.when - a.when; });
+      fp.next = false;
     } catch (e) {
       if (seq !== fp.seq || !fp.open) return;
       fp.err = errText(e);
@@ -1806,11 +1835,11 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   }
   function openMailHistory(focusKey) {   // everything you sent or received: Inbox and Sent Items together, newest first
     lastFocus = document.activeElement; lastFocusFid = focusKey || "";
-    fp = { open: true, folder: { full: "My Inbox \u00b7 sent & received", name: "My Inbox history" }, items: [], err: null, loading: true, seq: fp.seq, sel: null, mode: "hist", next: false, q: "", person: "" };
+    fp = { open: true, folder: { full: "My Inbox \u00b7 sent & received", name: "My Inbox history" }, items: [], err: null, loading: true, seq: fp.seq, sel: null, mode: "hist", next: false, q: "", person: "", range: "n100" };
     setSplit(true); showEmptyReading(); $("vread").classList.remove("logmode");
-    var s = $("vlSearch"); s.hidden = false; s.value = ""; s.placeholder = "Search sent & received\u2026"; s.setAttribute("aria-label", "Search sent and received email");
+    var s = $("vlSearch"); s.hidden = false; s.value = ""; s.placeholder = "Search sent & received\u2026"; s.setAttribute("aria-label", "Search sent and received email"); $("vlRange").hidden = false;
     fillFolderPanel(); $("reader").hidden = false; s.focus();
-    loadMailHist(false);
+    loadMailHist();
   }
   async function fetchEml(it) {
     if (it.dl) { try { var r = await fetch(it.dl); if (r.ok) return new Uint8Array(await r.arrayBuffer()); } catch (e) { /* fall back to the Graph route */ } }
@@ -1836,8 +1865,13 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     }
   }
   function wireReader() {
+    RANGES.forEach(function (rg) {
+      var b = el("button", "rng", rg[1]); b.type = "button"; b.dataset.r = String(rg[0]); b.setAttribute("aria-pressed", "false");
+      b.addEventListener("click", function () { setRange(rg[0]); });
+      $("vlRange").appendChild(b);
+    });
     var sT = null;
-    $("vlSearch").addEventListener("input", function () { clearTimeout(sT); sT = setTimeout(function () { fp.q = $("vlSearch").value; fp.shown = 200; fillFolderPanel(); if ((fp.mode === "log" || fp.mode === "hist") && fp.q.trim()) searchAll(); }, 120); });
+    $("vlSearch").addEventListener("input", function () { clearTimeout(sT); sT = setTimeout(function () { fp.q = $("vlSearch").value; fp.shown = 200; fillFolderPanel(); }, 120); });
     $("vlSearch").addEventListener("keydown", function (ev) { if (ev.key === "ArrowDown") { var r = $("vlBody").querySelector(".vrow"); if (r) { ev.preventDefault(); r.focus(); } } });
     $("vlBody").addEventListener("keydown", function (ev) {   // up/down arrows step through the list like in Outlook
       if (ev.key !== "ArrowDown" && ev.key !== "ArrowUp") return;
