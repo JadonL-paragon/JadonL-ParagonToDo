@@ -53,6 +53,7 @@
   .hstats .note { margin: 0; }
   .empty { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 40px; color: var(--muted); font-size: 13px; }
   .empty b { color: var(--good); margin-right: 6px; }
+  .hcount.statbtn { font-size: 28px; font-weight: 700; line-height: 1; }
   .tile.compact .stats { gap: 4px 16px; flex-wrap: nowrap; margin-top: 2px; }
   .tile.compact .stats > div, .tile.compact .stats > .statbtn { display: flex; align-items: baseline; gap: 5px; }
   .tile.compact .stats .count { font-size: 26px; }
@@ -107,10 +108,42 @@
   .arow .count { font-size: 30px; line-height: 1.1; }
   .arow .note { margin: 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   @media (max-width: 900px) { .arows { flex-direction: row; flex-wrap: wrap; gap: 4px 20px; } .arow .count { font-size: 26px; } }
-  .fpanel { width: min(720px, 100%); }
   button.person { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; border-radius: 6px; }
   button.person:hover .pn { text-decoration: underline; color: var(--text); }
   button.person:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .vsplit { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .rpanel.split { width: min(1240px, 100%); height: min(92vh, 880px); }
+  .rpanel.split .vsplit { flex-direction: row; gap: 14px; }
+  .vread { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; }
+  .vlist { width: 370px; flex: none; display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line); padding-right: 10px; }
+  .vlist[hidden] { display: none; }
+  .vlhead { padding: 2px 6px 8px; }
+  .vlt { font-size: 17px; font-weight: 700; overflow-wrap: anywhere; }
+  .vls { color: var(--muted); font-size: 12.5px; }
+  .vlbody { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: transparent transparent; outline: none; }
+  .vlbody:hover { scrollbar-color: var(--muted) transparent; }
+  .vgroup { font-size: 12px; font-weight: 600; color: var(--muted); padding: 8px 8px 4px; }
+  .vrow { display: flex; gap: 10px; width: 100%; text-align: left; padding: 8px 8px 8px 12px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: none; color: inherit; font: inherit; cursor: pointer; position: relative; }
+  .vrow:hover { background: var(--bg); border-color: var(--line); }
+  .vrow.sel { background: var(--bg); box-shadow: inset 3px 0 0 var(--accent); }
+  .vrow.unread::before { content: ""; position: absolute; left: 3px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--accent); }
+  .vav { width: 32px; height: 32px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; background: var(--bg); border: 1px solid var(--line); color: var(--muted); }
+  .vmain { min-width: 0; flex: 1; }
+  .vl1 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .vsender { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vtime { font-size: 11.5px; color: var(--muted); white-space: nowrap; flex: none; }
+  .vl2 { display: flex; align-items: center; gap: 6px; }
+  .vsubj { font-size: 13px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vl2 svg { flex: none; color: var(--muted); }
+  .vrow.unread .vsender, .vrow.unread .vsubj { font-weight: 700; }
+  .vprev { font-size: 12px; color: var(--muted); line-height: 1.35; margin-top: 1px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .vph { display: none; flex: 1; align-items: center; justify-content: center; color: var(--muted); }
+  .vread.empty .vph { display: flex; }
+  .vread.empty > *:not(.rhead):not(.vph) { display: none; }
+  .rpanel.split .pb { flex: 1; min-height: 0; }
+  .rpanel.split .pb iframe { height: 100%; min-height: 0; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (max-width: 860px) { .rpanel.split .vsplit { flex-direction: column; } .vlist { width: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 0 0 8px; max-height: 42%; } }
   .statbtn { background: none; border: 0; padding: 0; color: inherit; font: inherit; cursor: pointer; text-align: left; }
   .statbtn:hover .count, .statbtn:hover .note { text-decoration: underline; }
   .tile.compact .stats > .statbtn { display: flex; align-items: baseline; gap: 6px; }
@@ -257,39 +290,39 @@
   </section>
   </div>
 </div>
-<div id="fpanel" class="overlay" hidden>
-  <div class="panel fpanel" role="dialog" aria-modal="true" aria-labelledby="fpTitle">
-    <div class="ph">
-      <div style="min-width:0"><div id="fpTitle" class="rs"></div><div id="fpSub" class="rm"></div></div>
-      <button id="fpClose" class="x" aria-label="Close folder">✕</button>
-    </div>
-    <div id="fpBody" class="tlbody"></div>
-  </div>
-</div>
 <div id="reader" class="overlay" hidden>
-  <div class="panel rpanel" role="dialog" aria-modal="true" aria-labelledby="rdSubject">
-    <div class="rhead">
-      <div id="rdSubject" class="rs"></div>
-      <button id="rdClose" class="x" aria-label="Close">✕</button>
+  <div class="panel rpanel" role="dialog" aria-modal="true" aria-label="Email">
+    <div class="vsplit">
+      <aside id="vlist" class="vlist" hidden aria-label="Emails in this folder">
+        <div class="vlhead"><div id="vlTitle" class="vlt"></div><div id="vlSub" class="vls"></div></div>
+        <div id="vlBody" class="vlbody" tabindex="-1"></div>
+      </aside>
+      <section id="vread" class="vread">
+        <div class="rhead">
+          <div id="rdSubject" class="rs"></div>
+          <button id="rdClose" class="x" aria-label="Close">✕</button>
+        </div>
+        <div class="rfrom">
+          <div id="rdAvatar" class="avatar" aria-hidden="true"></div>
+          <div class="rfmeta">
+            <div class="rfline"><b id="rdName"></b> <span id="rdAddr" class="muted"></span></div>
+            <div id="rdTo" class="rm"></div>
+          </div>
+          <div id="rdDate" class="rdate"></div>
+        </div>
+        <div class="rbar">
+          <span class="rlabel">Assign to</span>
+          <div id="rdChips" class="chips" role="group" aria-label="Move this email to a support folder"></div>
+          <span class="rspacer"></span>
+          <a id="rdOpen" target="_blank" rel="noopener noreferrer" style="display:none">Open in Outlook</a>
+          <button id="rdDelete" class="danger" disabled>Delete</button>
+        </div>
+        <div id="rdStatus" class="rst"></div>
+        <div id="rdImgBar" class="imgbar" hidden><span>Remote images are hidden.</span><button id="rdImages">Show images</button></div>
+        <div id="rdBody" class="pb"></div>
+        <div class="vph">Select an email to read it.</div>
+      </section>
     </div>
-    <div class="rfrom">
-      <div id="rdAvatar" class="avatar" aria-hidden="true"></div>
-      <div class="rfmeta">
-        <div class="rfline"><b id="rdName"></b> <span id="rdAddr" class="muted"></span></div>
-        <div id="rdTo" class="rm"></div>
-      </div>
-      <div id="rdDate" class="rdate"></div>
-    </div>
-    <div class="rbar">
-      <span class="rlabel">Assign to</span>
-      <div id="rdChips" class="chips" role="group" aria-label="Move this email to a support folder"></div>
-      <span class="rspacer"></span>
-      <a id="rdOpen" target="_blank" rel="noopener noreferrer" style="display:none">Open in Outlook</a>
-      <button id="rdDelete" class="danger" disabled>Delete</button>
-    </div>
-    <div id="rdStatus" class="rst"></div>
-    <div id="rdImgBar" class="imgbar" hidden><span>Remote images are hidden.</span><button id="rdImages">Show images</button></div>
-    <div id="rdBody" class="pb"></div>
   </div>
 </div>
 <div id="tlpanel" class="overlay" hidden>
@@ -516,6 +549,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     var f = await gfetch(base + "/mailFolders/" + encodeURIComponent(id) + "?$select=totalItemCount,unreadItemCount");
     var m = await gfetch(base + "/mailFolders/" + encodeURIComponent(id) + "/messages?$top=15&$select=subject,from,isRead,webLink,receivedDateTime&$orderby=receivedDateTime desc");
     tile.count = f.totalItemCount;
+    tile.folderRef = { base: base, id: id };
     tile.items = (m.value || []).map(function (x) {
       var from = x.from && x.from.emailAddress;
       var who = (from && (from.name || from.address)) || "";
@@ -813,7 +847,16 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     var firstLoad = t.state === "loading" && t.count == null && !t.loaded;
     if (!firstLoad && t.state !== "need" && t.count != null) {
       // the headline number sits in the title row, which saves a whole line of height per tile
-      if (t.kind === "mail") head.appendChild(el("div", "hcount count " + (t.count === 0 ? "zero" : "some"), String(t.count) + (t.capped && t.count > 0 ? "+" : "")));
+      if (t.kind === "mail") {
+        var canOpen = t.folderRef && t.count > 0;
+        var cb = el(canOpen ? "button" : "div", "hcount count " + (t.count === 0 ? "zero" : "some") + (canOpen ? " statbtn" : ""), String(t.count) + (t.capped && t.count > 0 ? "+" : ""));
+        if (canOpen) {
+          cb.type = "button"; cb.dataset.fid = "tile-" + k; cb.title = "View the emails in this folder";
+          cb.setAttribute("aria-label", "View " + t.count + " emails in " + t.title);
+          cb.addEventListener("click", function () { openFolder({ base: t.folderRef.base, id: t.folderRef.id, full: t.title, name: t.title, count: t.count, focusKey: "tile-" + k }); });
+        }
+        head.appendChild(cb);
+      }
       else if (t.kind === "cal") head.appendChild(calStats(t));
     }
     box.appendChild(head);
@@ -1006,7 +1049,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     else $("banner").style.display = "none";
     render(); updateIndicators();
     $("status").textContent = "Updated " + stamp.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
-    if (!$("fpanel").hidden) reloadFolder();
+    if (fp.open) reloadFolder();
     $("btnRefresh").disabled = false; $("btnRefresh").classList.remove("spinning"); busy = false;
   }
   function startTimer() {
@@ -1025,7 +1068,11 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   function recips(list) { return (list || []).map(function (r) { var a = r.emailAddress || {}; return a.name || a.address || ""; }).filter(Boolean).join(", "); }
   function setActions(on) { $("rdDelete").disabled = !on; $("rdChips").querySelectorAll("button").forEach(function (b) { b.disabled = !on; }); }
   var lastFocus = null, lastFocusT = null;
-  function closeReader() { $("reader").hidden = true; cur = null; $("rdBody").textContent = ""; if (lastFocus && lastFocus.isConnected && lastFocus.focus) lastFocus.focus(); }
+  function closeReader() {
+    $("reader").hidden = true; cur = null; fp.open = false; fp.seq++; $("rdBody").textContent = ""; setSplit(false);
+    var back = (lastFocus && lastFocus.isConnected) ? lastFocus : (lastFocusFid ? document.querySelector('[data-fid="' + lastFocusFid.replace(/"/g, '\\"') + '"]') : null);   // the button may have been redrawn while the window was open
+    if (back && back.focus) back.focus();
+  }
   function showToast(text, undoFn) {
     var tt = $("toast"); tt.textContent = ""; tt.appendChild(document.createTextNode(text));
     if (undoFn) { var b = el("button", null, "Undo"); b.addEventListener("click", function () { tt.hidden = true; undoFn(); }); tt.appendChild(b); }
@@ -1090,13 +1137,14 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   async function markRead(it) {
     try {   // needs the write permission; if it hasn't been granted yet, skip quietly
       await gfetch(it.base + "/messages/" + encodeURIComponent(it.mid), null, { method: "PATCH", body: JSON.stringify({ isRead: true }), scopes: WRITE_SCOPES });
-      it.title = String(it.title).replace(/^\u25CF\s*/, ""); render(); if (!$("fpanel").hidden) fillFolderPanel();
+      it.title = String(it.title).replace(/^\u25CF\s*/, ""); it.isRead = true; render();
+      var row = $("vlBody").querySelector('.vrow[data-mid="' + String(it.mid).replace(/"/g, '\\"') + '"]'); if (row) row.classList.remove("unread");
     } catch (e) { /* ignore */ }
   }
-  async function openMessage(it) {
-    cur = { it: it, msg: null, images: false };
-    lastFocus = document.activeElement;
-    $("reader").hidden = false; $("rdClose").focus();
+  async function openMessage(it, inList) {
+    cur = { it: it, msg: null, images: false, inList: !!inList };
+    if (!inList) { lastFocus = document.activeElement; lastFocusFid = ""; setSplit(false); $("reader").hidden = false; $("rdClose").focus(); }
+    $("vread").classList.remove("empty");
     $("rdSubject").textContent = it.subject || "(no subject)"; $("rdName").textContent = "Loading\u2026"; $("rdAddr").textContent = ""; $("rdTo").textContent = ""; $("rdDate").textContent = ""; $("rdAvatar").textContent = "";
     $("rdBody").textContent = ""; $("rdStatus").textContent = ""; $("rdImgBar").hidden = true; $("rdChips").textContent = ""; setActions(false);
     var open = $("rdOpen"); if (it.url) { open.href = it.url; open.style.display = ""; } else open.style.display = "none";
@@ -1138,11 +1186,12 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     var dest, label;
     if (kind === "delete") { dest = "deleteditems"; label = "Deleted Items"; }
     else { dest = destId; label = destLabel; }
-    var it = cur.it, orig = cur.msg.parentFolderId;
+    var it = cur.it, orig = cur.msg.parentFolderId, wasList = !!cur.inList;
     setActions(false); $("rdStatus").textContent = "Working\u2026";
     try {
       var moved = await moveMessage(it.base, it.mid, dest);
-      closeReader(); removeItem(it); folderItemGone(it);
+      if (wasList) showEmptyReading(); else closeReader();
+      removeItem(it); folderItemGone(it);
       showToast(kind === "delete" ? "Moved to Deleted Items." : "Assigned to " + label + ".", moved && moved.id ? function () { undoMove(it.base, moved.id, orig); } : null);
       refresh();
     } catch (e) {
@@ -1166,38 +1215,75 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   }
   function openTrelloPanel() { lastFocusT = document.activeElement; fillTrelloPanel(); $("tlpanel").hidden = false; $("tlClose").focus(); }
   function closeTrelloPanel() { $("tlpanel").hidden = true; if (lastFocusT && lastFocusT.isConnected && lastFocusT.focus) lastFocusT.focus(); }
-  // ---------- a team folder's emails ----------
-  var fp = { open: false, folder: null, items: [], err: null, loading: false, seq: 0 }, lastFocusF = null, lastFocusFid = "";
+  // ---------- folder view: emails with a few preview lines on the left, the reading pane on the right ----------
+  var fp = { open: false, folder: null, items: [], err: null, loading: false, seq: 0, sel: null }, lastFocusFid = "", selTimer = null;
+  function setSplit(on) {
+    $("reader").querySelector(".rpanel").classList.toggle("split", on);
+    $("vlist").hidden = !on;
+    if (!on) $("vread").classList.remove("empty");
+  }
+  function mailTime(d) {
+    var now = new Date(), sod = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (d >= sod) return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    if ((sod - d) / 86400000 < 6) return d.toLocaleDateString([], { weekday: "short" }) + " " + d.toLocaleDateString([], { month: "numeric", day: "numeric" });
+    return d.toLocaleDateString([], { month: "numeric", day: "numeric", year: "2-digit" });
+  }
+  function groupLabel(d) {
+    var now = new Date(), sod = new Date(now.getFullYear(), now.getMonth(), now.getDate()), days = (sod - d) / 86400000;
+    return d >= sod ? "Today" : (days < 1 ? "Yesterday" : (days < 6 ? "This week" : "Older"));
+  }
+  function clipIcon() {
+    var ns = "http://www.w3.org/2000/svg", s = document.createElementNS(ns, "svg"), p = document.createElementNS(ns, "path");
+    s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("width", "13"); s.setAttribute("height", "13"); s.setAttribute("fill", "none"); s.setAttribute("stroke", "currentColor"); s.setAttribute("stroke-width", "2"); s.setAttribute("stroke-linecap", "round"); s.setAttribute("stroke-linejoin", "round");
+    s.setAttribute("role", "img"); s.setAttribute("aria-label", "Has attachment");
+    p.setAttribute("d", "M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48");
+    s.appendChild(p); return s;
+  }
   function fpItems(msgs, base) {
     return (msgs || []).map(function (x) {
-      var from = x.from && x.from.emailAddress, who = (from && (from.name || from.address)) || "";
-      var when = x.receivedDateTime ? new Date(x.receivedDateTime).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "";
-      var subj = x.subject || "(no subject)";
-      return { id: x.id, mid: x.id, base: base, subject: subj, title: (x.isRead === false ? "\u25CF " : "") + subj, meta: [who, when].filter(Boolean).join(" \u00b7 "), url: safeUrl(x.webLink) };
+      var from = x.from && x.from.emailAddress, who = (from && (from.name || from.address)) || "Unknown sender", subj = x.subject || "(no subject)";
+      return { id: x.id, mid: x.id, base: base, subject: subj, title: (x.isRead === false ? "\u25CF " : "") + subj, sender: who,
+        preview: String(x.bodyPreview || "").replace(/\s+/g, " ").trim(), when: x.receivedDateTime ? new Date(x.receivedDateTime) : new Date(0),
+        isRead: x.isRead !== false, hasAtt: !!x.hasAttachments, url: safeUrl(x.webLink) };
     });
   }
+  function selectRow(it, row) {
+    fp.sel = it.mid;
+    $("vlBody").querySelectorAll(".vrow.sel").forEach(function (r) { r.classList.remove("sel"); r.removeAttribute("aria-current"); });
+    row.classList.add("sel"); row.setAttribute("aria-current", "true");
+    openMessage(it, true);
+  }
   function fillFolderPanel() {
-    var f = fp.folder, body = $("fpBody"); if (!f) return;
+    var f = fp.folder, body = $("vlBody"); if (!f) return;
     var keep = body.scrollTop; body.textContent = "";
-    var cur = ((tiles.team && tiles.team.people) || []).filter(function (p) { return p.id === f.id; })[0];
-    if (cur) f.count = cur.count;
+    var cur2 = ((tiles.team && tiles.team.people) || []).filter(function (p) { return p.id === f.id && p.base === f.base; })[0];
+    if (cur2) f.count = cur2.count;
     var count = typeof f.count === "number" ? f.count : fp.items.length;
-    $("fpTitle").textContent = f.full || f.name;
-    $("fpSub").textContent = fp.loading ? "Loading\u2026" : count + " email" + (count === 1 ? "" : "s");
+    $("vlTitle").textContent = f.full || f.name;
+    $("vlSub").textContent = fp.loading ? "Loading\u2026" : count + " email" + (count === 1 ? "" : "s");
     if (fp.err) body.appendChild(el("div", "err", fp.err));
     if (!fp.loading && !fp.err && !fp.items.length) body.appendChild(el("div", "note", "No emails in this folder."));
-    if (fp.items.length) {
-      var ul = itemList({ kind: "mail", items: fp.items, title: f.full || f.name });
-      ul.className = ""; ul.removeAttribute("tabindex"); ul.removeAttribute("aria-label");
-      body.appendChild(ul);
-      if (count > fp.items.length) body.appendChild(el("div", "note", "Showing the newest " + fp.items.length + " of " + count + "."));
-    }
+    var lastGroup = "";
+    fp.items.forEach(function (it) {
+      var g = groupLabel(it.when); if (g !== lastGroup) { body.appendChild(el("div", "vgroup", g)); lastGroup = g; }
+      var unread = it.isRead === false, row = el("button", "vrow" + (unread ? " unread" : "") + (fp.sel === it.mid ? " sel" : "")); row.type = "button";
+      row.dataset.mid = it.mid; if (fp.sel === it.mid) row.setAttribute("aria-current", "true");
+      var av = el("div", "vav", (it.sender.replace(/[^A-Za-z0-9]/g, "").charAt(0) || "?").toUpperCase()); av.setAttribute("aria-hidden", "true");
+      var main = el("div", "vmain"), l1 = el("div", "vl1"), l2 = el("div", "vl2");
+      l1.appendChild(el("span", "vsender", it.sender)); l1.appendChild(el("span", "vtime", mailTime(it.when)));
+      l2.appendChild(el("span", "vsubj", it.subject)); if (it.hasAtt) l2.appendChild(clipIcon());
+      main.appendChild(l1); main.appendChild(l2); if (it.preview) main.appendChild(el("div", "vprev", it.preview));
+      row.appendChild(av); row.appendChild(main);
+      row.addEventListener("click", function () { selectRow(it, row); });
+      body.appendChild(row);
+    });
+    if (count > fp.items.length && fp.items.length) body.appendChild(el("div", "note", "Showing the newest " + fp.items.length + " of " + count + ".", ));
     body.scrollTop = keep;
   }
   async function loadFolder(silent) {
     var f = fp.folder, seq = ++fp.seq;
     try {
-      var r = await gfetch(f.base + "/mailFolders/" + encodeURIComponent(f.id) + "/messages?$top=50&$select=subject,from,isRead,webLink,receivedDateTime&$orderby=receivedDateTime desc");
+      var r = await gfetch(f.base + "/mailFolders/" + encodeURIComponent(f.id) + "/messages?$top=50&$select=subject,from,isRead,webLink,receivedDateTime,bodyPreview,hasAttachments&$orderby=receivedDateTime desc");
       if (seq !== fp.seq || !fp.open) return;
       fp.items = fpItems(r.value, f.base); fp.err = null;
     } catch (e) {
@@ -1206,16 +1292,18 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     }
     fp.loading = false; fillFolderPanel();
   }
-  function openFolder(p) {
-    lastFocusF = document.activeElement; lastFocusFid = p.id || "";
-    fp = { open: true, folder: p, items: [], err: null, loading: true, seq: fp.seq };
-    fillFolderPanel(); $("fpanel").hidden = false; $("fpClose").focus();
-    loadFolder(false);
+  function showEmptyReading() {
+    cur = null; fp.sel = null;
+    ["rdSubject", "rdName", "rdAddr", "rdTo", "rdDate", "rdAvatar", "rdStatus", "rdBody", "rdChips"].forEach(function (id) { $(id).textContent = ""; });
+    $("rdImgBar").hidden = true; $("vread").classList.add("empty");
+    $("vlBody").querySelectorAll(".vrow.sel").forEach(function (r) { r.classList.remove("sel"); r.removeAttribute("aria-current"); });
   }
-  function closeFolder() {
-    $("fpanel").hidden = true; fp.open = false; fp.seq++;
-    var back = (lastFocusF && lastFocusF.isConnected) ? lastFocusF : (lastFocusFid ? document.querySelector('button.person[data-fid="' + lastFocusFid.replace(/"/g, '\\"') + '"]') : null);   // the chip may have been redrawn while the window was open
-    if (back && back.focus) back.focus();
+  function openFolder(p) {
+    lastFocus = document.activeElement; lastFocusFid = p.focusKey || p.id || "";
+    fp = { open: true, folder: p, items: [], err: null, loading: true, seq: fp.seq, sel: null };
+    setSplit(true); showEmptyReading(); fillFolderPanel();
+    $("reader").hidden = false; $("vlBody").focus();
+    loadFolder(false);
   }
   function reloadFolder() { if (fp.open) loadFolder(true); }
   function folderItemGone(it) {
@@ -1225,15 +1313,21 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     fillFolderPanel();
   }
   function wireReader() {
-    $("fpClose").addEventListener("click", closeFolder);
-    $("fpanel").addEventListener("click", function (ev) { if (ev.target === $("fpanel")) closeFolder(); });
+    $("vlBody").addEventListener("keydown", function (ev) {   // up/down arrows step through the list like in Outlook
+      if (ev.key !== "ArrowDown" && ev.key !== "ArrowUp") return;
+      var rows = [].slice.call($("vlBody").querySelectorAll(".vrow")), i = rows.indexOf(document.activeElement), n;
+      if (i < 0) { n = rows[0]; if (!n) return; }
+      else n = rows[i + (ev.key === "ArrowDown" ? 1 : -1)];
+      if (!n) return;
+      ev.preventDefault(); n.focus(); if (n.scrollIntoView) n.scrollIntoView({ block: "nearest" });
+      clearTimeout(selTimer); selTimer = setTimeout(function () { if (document.activeElement === n) n.click(); }, 160);
+    });
     $("tlClose").addEventListener("click", closeTrelloPanel);
     $("tlpanel").addEventListener("click", function (ev) { if (ev.target === $("tlpanel")) closeTrelloPanel(); });
     document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !$("tlpanel").hidden) closeTrelloPanel(); });
     $("rdClose").addEventListener("click", closeReader);
     $("reader").addEventListener("click", function (ev) { if (ev.target === $("reader")) closeReader(); });
     document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !$("reader").hidden) { closeReader(); ev.preventDefault(); } });
-    document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !$("fpanel").hidden && !ev.defaultPrevented) closeFolder(); });   // Esc closes the email window first, then the folder
     $("rdDelete").addEventListener("click", function () { runAction("delete"); });
     $("rdImages").addEventListener("click", function () { if (cur && cur.msg) { cur.images = true; renderBody(); } });
   }
