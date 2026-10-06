@@ -276,6 +276,10 @@
       <div><label for="sTrelloList">Trello list to count</label><input id="sTrelloList" type="text" placeholder="e.g. To Be Assigned" autocomplete="off"></div>
       <div><label for="sTrelloBoards">…on these boards (blank = all)</label><input id="sTrelloBoards" type="text" placeholder="Board names, comma separated" autocomplete="off"></div>
     </div>
+    <div class="row">
+      <div style="grid-column: 1 / -1"><label for="sImgAllow">Always show remote images from these senders (domains or addresses, comma separated)</label><input id="sImgAllow" type="text" placeholder="e.g. premiermetals.com, goparagon.com" autocomplete="off" spellcheck="false"></div>
+    </div>
+    <p class="hint">Pictures built into an email always show. Pictures fetched from the internet can tell the sender when you opened the message, so only list senders you trust. A sender\u2019s address can be forged, so a domain you list is only as safe as your mail filtering.</p>
     <p class="hint">The Trello key and token are stored in this browser only. The tile shows the open cards in that list for each board you name; a board only appears if it has a list with that name.</p>
     <label>Show the dot, badge and pop-ups when something new arrives in</label>
     <div style="margin-bottom:12px">
@@ -318,7 +322,7 @@
           <button id="rdDelete" class="danger" disabled>Delete</button>
         </div>
         <div id="rdStatus" class="rst"></div>
-        <div id="rdImgBar" class="imgbar" hidden><span>Remote images are hidden.</span><button id="rdImages">Show images</button></div>
+        <div id="rdImgBar" class="imgbar" hidden><span>Remote images are hidden.</span><button id="rdImages">Show images</button><button id="rdImagesAlways"></button></div>
         <div id="rdBody" class="pb"></div>
         <div class="vph">Select an email to read it.</div>
       </section>
@@ -426,7 +430,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     refreshSeconds: 10,
     trelloAssignList: "To Be Assigned",   // Trello list whose open cards are counted on the Trello tile
     trelloAssignBoards: "Paradigm ERP Specialists, Paradigm ERP Add Ons",   // only these boards (blank in Settings = every board that has the list)
-    titles: { support: "Support Inbox", folder: "JadonL Support Inbox", personal: "jadonl@goparagon.com" }
+    titles: { support: "Support Inbox", folder: "JadonL Support Inbox", personal: "My Inbox" }
   };
   // ================================================================================
 
@@ -440,7 +444,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     name: CONFIG.name, clientId: CONFIG.clientId, tenantId: CONFIG.tenantId, shared: CONFIG.sharedMailbox,
     folder: CONFIG.folderName, folderIn: CONFIG.folderIn, refresh: CONFIG.refreshSeconds,
     badge: { support: true, folder: true, personal: true, teams: true, calendar: false, team: false, trello: true },
-    dismissed: [], notify: false, teamPrefix: "Support", trelloKey: "", trelloToken: "", trelloAssignList: CONFIG.trelloAssignList, trelloAssignBoards: CONFIG.trelloAssignBoards
+    dismissed: [], notify: false, teamPrefix: "Support", trelloKey: "", trelloToken: "", trelloAssignList: CONFIG.trelloAssignList, trelloAssignBoards: CONFIG.trelloAssignBoards, imageAllow: ""
   };
   var msalApp = null, account = null, me = null;
   var tiles = {}, busy = false, timer = null, needSignIn = false;
@@ -587,7 +591,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       });
     }
     if (!found.length && lastErr) throw lastErr;
-    found.sort(function (a, b) { return a.name.localeCompare(b.name); });
+    found.sort(function (a, b) { return (b.count - a.count) || a.name.localeCompare(b.name); });   // most emails on the left; ties alphabetical
     tile.people = found;
     tile.count = found.reduce(function (s, p) { return s + p.count; }, 0);
     tile.items = [];
@@ -744,7 +748,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       var text = htmlToText(m.text) || "(attachment or non-text message)";
       out.push({
         id: c.id + "|" + m.when, when: m.when,
-        title: (m.name || "Someone") + (c.topic ? " \u00b7 " + c.topic : ""),
+        title: (c.topic ? "[" + c.topic + "] " : "") + (m.name || "Someone"),   // group chats lead with the chat name in brackets
         meta: fmtAgo(new Date(m.when)) + " \u00b7 " + text.slice(0, 140),
         url: safeUrl(c.webUrl),
         appUrl: /^https:\/\/teams\.microsoft\.com\/l\//i.test(c.webUrl || "") ? String(c.webUrl).replace(/^https:\/\//i, "msteams://") : null
@@ -1082,11 +1086,24 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     if (undoFn) { var b = el("button", null, "Undo"); b.addEventListener("click", function () { tt.hidden = true; undoFn(); }); tt.appendChild(b); }
     tt.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { tt.hidden = true; }, 10000);
   }
+  function senderParts(m) {
+    var addr = String((m.from && m.from.emailAddress && m.from.emailAddress.address) || "").toLowerCase();
+    return { addr: addr, dom: addr.split("@")[1] || "" };
+  }
+  function trustedSender(m) {
+    var s = senderParts(m); if (!s.addr) return false;
+    return String(cfg.imageAllow || "").toLowerCase().split(/[,;\s]+/).filter(Boolean).some(function (e) {
+      return e === s.addr || e === s.dom || (s.dom && s.dom.endsWith("." + e.replace(/^@/, ""))) || e === "@" + s.dom;
+    });
+  }
   function renderBody() {
     var m = cur.msg, host = $("rdBody"); host.textContent = "";
-    var content = (m.body && m.body.content) || "", isHtml = !!(m.body && /html/i.test(m.body.contentType || ""));
-    // The message is shown in a sandboxed frame: no scripts, no same-origin access, remote images blocked until you ask.
-    var csp = "default-src 'none'; style-src 'unsafe-inline'; img-src data:" + (cur.images ? " https:" : "");
+    var content = cur.html || (m.body && m.body.content) || "", isHtml = !!(m.body && /html/i.test(m.body.contentType || ""));
+    // embedded pictures that are still loading (or can't be fetched) stay blank rather than showing a broken-image icon
+    if (isHtml) content = content.replace(/cid:[^"'\s>)]+/gi, "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
+    var allowRemote = !!cur.images || trustedSender(m);
+    // The message is shown in a sandboxed frame: no scripts, no same-origin access. Pictures built into the email (data:) always show; remote ones only for you-approved senders.
+    var csp = "default-src 'none'; style-src 'unsafe-inline'; img-src data:" + (allowRemote ? " https:" : "");
     var doc = '<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="' + csp + '"><base target="_blank">' +
       '<style>body{font:14px/1.5 Segoe UI,Arial,sans-serif;color:#222;background:#fff;margin:12px;overflow-wrap:anywhere}img{max-width:100%;height:auto}pre{white-space:pre-wrap;font:inherit;margin:0}</style></head><body>' +
       (isHtml ? content : "<pre>" + escapeHtml(content) + "</pre>") + "</body></html>";
@@ -1094,8 +1111,39 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     f.setAttribute("sandbox", "allow-popups allow-popups-to-escape-sandbox"); f.setAttribute("referrerpolicy", "no-referrer"); f.setAttribute("title", "Email body");
     f.srcdoc = doc; host.appendChild(f);
     var hasRemote = isHtml && /<img[^>]+src\s*=\s*["']?https?:/i.test(content);   // only mention images when there are some
-    $("rdImgBar").hidden = !(hasRemote && !cur.images);
+    var s = senderParts(m);
+    $("rdImagesAlways").textContent = "Always show from " + (s.dom || s.addr || "this sender");
+    $("rdImagesAlways").style.display = s.addr ? "" : "none";
+    $("rdImgBar").hidden = !(hasRemote && !allowRemote);
   }
+  // Pictures embedded in the email (logos, signatures) are separate attachments the body points to with "cid:". Fetch them and put them inline.
+  var imgCache = {};
+  function escRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+  async function inlineImages(it, m) {
+    var html = (m.body && m.body.content) || "";
+    if (!/cid:/i.test(html) || !(m.body && /html/i.test(m.body.contentType || ""))) return;
+    if (imgCache[it.mid]) { applyInline(it, imgCache[it.mid]); return; }
+    try {
+      var list = await gfetch(it.base + "/messages/" + encodeURIComponent(it.mid) + "/attachments?$select=id,name,contentType,size,isInline,contentId");
+      var refs = {};
+      html.replace(/cid:([^"'\s>)]+)/gi, function (all, c) { refs[c.toLowerCase()] = c; return all; });
+      var picks = (list.value || []).filter(function (a) {
+        var cid = String(a.contentId || "").replace(/^<|>$/g, "").toLowerCase();
+        return cid && refs[cid] && /^image\/(png|jpe?g|gif|bmp|webp)$/i.test(a.contentType || "") && (a.size || 0) <= 2097152;
+      }).slice(0, 8);
+      if (!picks.length) return;
+      var out = html;
+      await Promise.all(picks.map(async function (a) {
+        var full = await gfetch(it.base + "/messages/" + encodeURIComponent(it.mid) + "/attachments/" + encodeURIComponent(a.id) + "?$select=contentBytes,contentType");
+        if (!full || !full.contentBytes) return;
+        var cid = String(a.contentId).replace(/^<|>$/g, "").toLowerCase();
+        out = out.replace(new RegExp("cid:" + escRe(refs[cid]), "gi"), "data:" + a.contentType + ";base64," + full.contentBytes);
+      }));
+      var keys = Object.keys(imgCache); if (keys.length > 30) delete imgCache[keys[0]];
+      imgCache[it.mid] = out; applyInline(it, out);
+    } catch (e) { /* the pictures simply stay as placeholders */ }
+  }
+  function applyInline(it, html) { if (cur && cur.it && cur.it.mid === it.mid && cur.msg) { cur.html = html; renderBody(); } }
   function renderMessage() {
     var m = cur.msg, from = (m.from && m.from.emailAddress) || {};
     $("rdSubject").textContent = m.subject || "(no subject)";
@@ -1155,7 +1203,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     try {
       var m = await gfetch(it.base + "/messages/" + encodeURIComponent(it.mid) + "?$select=subject,from,toRecipients,ccRecipients,receivedDateTime,body,hasAttachments,isRead,parentFolderId");
       if (!cur || cur.it !== it) return;
-      cur.msg = m; renderMessage(); setActions(true);
+      cur.msg = m; renderMessage(); setActions(true); inlineImages(it, m);
       loadDestFolders(it.base, m.parentFolderId);
       if (m.isRead === false) markRead(it);
     } catch (e) { if (cur && cur.it === it) { $("rdName").textContent = ""; $("rdStatus").textContent = errText(e); } }
@@ -1335,6 +1383,13 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     document.addEventListener("keydown", function (ev) { if (ev.key === "Escape" && !$("reader").hidden) { closeReader(); ev.preventDefault(); } });
     $("rdDelete").addEventListener("click", function () { runAction("delete"); });
     $("rdImages").addEventListener("click", function () { if (cur && cur.msg) { cur.images = true; renderBody(); } });
+    $("rdImagesAlways").addEventListener("click", function () {
+      if (!cur || !cur.msg) return;
+      var s = senderParts(cur.msg), entry = s.dom || s.addr; if (!entry) return;
+      var list = String(cfg.imageAllow || "").split(/[,;\s]+/).filter(Boolean);
+      if (list.map(function (x) { return x.toLowerCase(); }).indexOf(entry) < 0) list.push(entry);
+      cfg.imageAllow = list.join(", "); saveCfg(); cur.images = true; renderBody();
+    });
   }
 
   // ---------- settings UI ----------
@@ -1343,7 +1398,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     $("sName").value = cfg.name; $("sClient").value = cfg.clientId; $("sTenant").value = cfg.tenantId; $("sRefresh").value = cfg.refresh;
     $("sShared").value = cfg.shared; $("sFolder").value = cfg.folder; $("sFolderIn").value = cfg.folderIn;
     $("bSupport").checked = cfg.badge.support; $("bFolder").checked = cfg.badge.folder; $("bPersonal").checked = cfg.badge.personal;
-    $("bCalendar").checked = cfg.badge.calendar; $("bTeam").checked = cfg.badge.team; $("bTrello").checked = cfg.badge.trello; $("sTrelloKey").value = cfg.trelloKey; $("sTrelloToken").value = cfg.trelloToken; $("sTrelloList").value = cfg.trelloAssignList; $("sTrelloBoards").value = cfg.trelloAssignBoards; $("sPrefix").value = cfg.teamPrefix;
+    $("bCalendar").checked = cfg.badge.calendar; $("bTeam").checked = cfg.badge.team; $("bTrello").checked = cfg.badge.trello; $("sTrelloKey").value = cfg.trelloKey; $("sTrelloToken").value = cfg.trelloToken; $("sTrelloList").value = cfg.trelloAssignList; $("sTrelloBoards").value = cfg.trelloAssignBoards; $("sImgAllow").value = cfg.imageAllow; $("sPrefix").value = cfg.teamPrefix;
   }
   function syncNotifyBtn() {
     var b = $("btnNotify"), on = notifyOn();
@@ -1351,7 +1406,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     b.className = on ? "primary" : "";
   }
   function acctNote(text) { $("acctMsg").textContent = text || ""; }
-  function openSettings() { acctNote(""); $("stwrap").hidden = false; $("btnSettings").setAttribute("aria-expanded", "true"); $("sName").focus(); }
+  function openSettings() { acctNote(""); $("sImgAllow").value = cfg.imageAllow;   /* may have changed from the email window */ $("stwrap").hidden = false; $("btnSettings").setAttribute("aria-expanded", "true"); $("sName").focus(); }
   function closeSettings() { $("stwrap").hidden = true; $("btnSettings").setAttribute("aria-expanded", "false"); $("btnSettings").focus(); }
   function wireUi() {
     $("btnNotify").addEventListener("click", async function () {
@@ -1375,7 +1430,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       cfg.name = $("sName").value.trim() || "Work Dashboard"; cfg.clientId = $("sClient").value.trim(); cfg.tenantId = $("sTenant").value.trim();
       var r = parseInt($("sRefresh").value, 10); cfg.refresh = r >= 10 && r <= 900 ? r : 15; cfg.teamPrefix = $("sPrefix").value.trim() || "Support";
       cfg.shared = $("sShared").value.trim(); cfg.folder = $("sFolder").value.trim(); cfg.folderIn = $("sFolderIn").value;
-      cfg.badge = { support: $("bSupport").checked, folder: $("bFolder").checked, personal: $("bPersonal").checked, calendar: $("bCalendar").checked, team: $("bTeam").checked, trello: $("bTrello").checked }; cfg.trelloKey = $("sTrelloKey").value.trim(); cfg.trelloToken = $("sTrelloToken").value.trim(); cfg.trelloAssignList = $("sTrelloList").value.trim(); cfg.trelloAssignBoards = $("sTrelloBoards").value.trim();
+      cfg.badge = { support: $("bSupport").checked, folder: $("bFolder").checked, personal: $("bPersonal").checked, calendar: $("bCalendar").checked, team: $("bTeam").checked, trello: $("bTrello").checked }; cfg.trelloKey = $("sTrelloKey").value.trim(); cfg.trelloToken = $("sTrelloToken").value.trim(); cfg.trelloAssignList = $("sTrelloList").value.trim(); cfg.trelloAssignBoards = $("sTrelloBoards").value.trim(); cfg.imageAllow = $("sImgAllow").value.trim();
       saveCfg(); location.reload();
     });
     $("btnAuth").addEventListener("click", function () {
