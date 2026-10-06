@@ -1475,10 +1475,10 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   function logSubtitle(list) {
     var q = String(fp.q || "").trim(), n = list.length;
     if (fp.loading) return "Loading\u2026";
-    if (!q) return fp.items.length + " email" + (fp.items.length === 1 ? "" : "s") + (fp.next ? " loaded \u00b7 more available" : "");
+    if (!q) return fp.items.length + " email" + (fp.items.length === 1 ? "" : "s") + (fp.next ? " loaded \u00b7 more available" : (fp.truncated ? " loaded \u00b7 the log is larger" : ""));
     var head = n === 0 ? "No matches" : n + " match" + (n === 1 ? "" : "es") + " \u00b7 " + dateRange(list);
     if (fp.searching) return head + " \u00b7 searching older emails\u2026";
-    return head + " \u00b7 searched " + (fp.next ? "the newest " : "all ") + fp.items.length;
+    return head + " \u00b7 searched " + (fp.next ? "the newest " : (fp.truncated ? "the first " : "all ")) + fp.items.length;
   }
   function fillFolderPanel() {
     var f = fp.folder, body = $("vlBody"); if (!f) return;
@@ -1498,7 +1498,8 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     }
     if (!fp.loading && !fp.err && !fp.needConsent && !list.length) body.appendChild(el("div", "note", isLog && fp.q ? "No emails match that search." : "No emails in this folder."));
     var lastGroup = "";
-    list.forEach(function (it) {
+    var shownList = isLog ? list.slice(0, fp.shown || 200) : list;   // long logs render 200 rows at a time to stay quick
+    shownList.forEach(function (it) {
       var g = isLog ? logGroup(it.when) : groupLabel(it.when); if (g !== lastGroup) { body.appendChild(el("div", "vgroup", g)); lastGroup = g; }
       var unread = it.isRead === false, row = el("button", "vrow" + (unread ? " unread" : "") + (fp.sel === it.mid ? " sel" : "")); row.type = "button";
       row.dataset.mid = it.mid; if (fp.sel === it.mid) row.setAttribute("aria-current", "true");
@@ -1513,6 +1514,12 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       body.appendChild(row);
     });
     if (!isLog && count > fp.items.length && fp.items.length) body.appendChild(el("div", "note", "Showing the newest " + fp.items.length + " of " + count + "."));
+    if (isLog && list.length > shownList.length) {
+      var sm = el("button", "", "Show " + Math.min(200, list.length - shownList.length) + " more (" + (list.length - shownList.length) + " not shown)"); sm.type = "button"; sm.style.margin = "10px 8px";
+      sm.addEventListener("click", function () { fp.shown = (fp.shown || 200) + 200; fillFolderPanel(); });
+      body.appendChild(sm);
+    }
+    if (isLog && fp.truncated) body.appendChild(el("div", "note", "This log has more than " + LOG_ALL_CAP + " emails and SharePoint can\u2019t sort them, so only the first " + LOG_ALL_CAP + " files (by name) were loaded. Some recent emails may be missing."));
     if (isLog && fp.next && !fp.loading && !fp.searching) {
       var more = el("button", "", "Load older emails"); more.type = "button"; more.style.margin = "10px 8px";
       more.addEventListener("click", function () { more.disabled = true; loadLog(true); });
@@ -1584,20 +1591,54 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     var q = String(fp.q || "").trim().toLowerCase();
     return q ? fp.items.filter(function (it) { return it.hay.indexOf(q) >= 0; }) : fp.items;
   }
+  // SharePoint doesn't reliably sort a folder's files, and can't filter them by date. So: ask for newest-modified first and CHECK the answer;
+  // if the order didn't come back right, load the whole folder (up to a limit) and sort it here so the newest emails are never missed.
+  var LOG_ALL_CAP = 3000, logAllCache = null, logSortWorks = true;
+  function logOrdered(list) {
+    for (var i = 1; i < list.length; i++) if (String(list[i - 1].lastModifiedDateTime || "") < String(list[i].lastModifiedDateTime || "")) return false;
+    return true;
+  }
+  async function logAll(startPath) {
+    var all = [], next = startPath, pages = 0;
+    while (next && pages < 25) {
+      var r = await gfetch(next, null, { scopes: SP_SCOPES }); pages++;
+      all = all.concat(r.value || []);
+      next = r["@odata.nextLink"] ? String(r["@odata.nextLink"]).replace(GRAPH, "") : null;
+      if (all.length >= LOG_ALL_CAP && next) break;
+    }
+    return { value: all, truncated: !!next };
+  }
   async function loadLog(more) {
     var seq = ++fp.seq;
-    if (!more) { fp.loading = true; fp.err = null; fp.needConsent = false; }
+    if (!more) { fp.loading = true; fp.err = null; fp.needConsent = false; fp.truncated = false; }
     fillFolderPanel();
     try {
       var id = await logDriveId(), folder = String(cfg.logFolder || "").trim().replace(/^\/+|\/+$/g, "");
-      var path = (more && fp.next) ? String(fp.next).replace(GRAPH, "") : "/drives/" + id + "/root" + (folder ? ":/" + encodeURI(folder) + ":" : "") + "/children?$top=100&$expand=listItem($expand=fields)&$orderby=createdDateTime desc";
-      var r;
-      try { r = await gfetch(path, null, { scopes: SP_SCOPES }); }
-      catch (e) { if (!more && e && e.status === 400) r = await gfetch(path.replace("&$orderby=createdDateTime desc", ""), null, { scopes: SP_SCOPES }); else throw e; }
+      var base = "/drives/" + id + "/root" + (folder ? ":/" + encodeURI(folder) + ":" : "") + "/children", sel = "$expand=listItem($expand=fields)";
+      var list, next = null, truncated = false;
+      if (more && fp.next) {
+        var r1 = await gfetch(String(fp.next).replace(GRAPH, ""), null, { scopes: SP_SCOPES });
+        list = r1.value || []; next = r1["@odata.nextLink"] || null;
+      } else if (logAllCache && logAllCache.key === base && Date.now() - logAllCache.at < 60000) {
+        list = logAllCache.list; truncated = logAllCache.truncated;
+      } else {
+        var r = null;
+        if (logSortWorks) {
+          try { r = await gfetch(base + "?$top=100&" + sel + "&$orderby=lastModifiedDateTime desc", null, { scopes: SP_SCOPES }); if (!logOrdered(r.value || [])) r = null; }
+          catch (e) { if (!(e && e.status === 400)) throw e; r = null; }
+        }
+        if (r) { list = r.value || []; next = r["@odata.nextLink"] || null; }
+        else {
+          logSortWorks = false;
+          var all = await logAll(base + "?$top=200&" + sel);
+          list = all.value; truncated = all.truncated;
+          logAllCache = { key: base, list: list, truncated: truncated, at: Date.now() };
+        }
+      }
       if (seq !== fp.seq || !fp.open) return;
-      var add = (r.value || []).filter(function (x) { return x.file; }).map(logItem);
+      var add = list.filter(function (x) { return x.file; }).map(logItem);
       fp.items = (more ? fp.items.concat(add) : add).sort(function (a, b) { return b.when - a.when; });
-      fp.next = r["@odata.nextLink"] || null;
+      fp.next = next; fp.truncated = truncated;
     } catch (e) {
       if (seq !== fp.seq || !fp.open) return;
       if (e && e.needScopes) fp.needConsent = true;
@@ -1648,7 +1689,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   }
   function wireReader() {
     var sT = null;
-    $("vlSearch").addEventListener("input", function () { clearTimeout(sT); sT = setTimeout(function () { fp.q = $("vlSearch").value; fillFolderPanel(); if (fp.mode === "log" && fp.q.trim()) searchAll(); }, 120); });
+    $("vlSearch").addEventListener("input", function () { clearTimeout(sT); sT = setTimeout(function () { fp.q = $("vlSearch").value; fp.shown = 200; fillFolderPanel(); if (fp.mode === "log" && fp.q.trim()) searchAll(); }, 120); });
     $("vlSearch").addEventListener("keydown", function (ev) { if (ev.key === "ArrowDown") { var r = $("vlBody").querySelector(".vrow"); if (r) { ev.preventDefault(); r.focus(); } } });
     $("vlBody").addEventListener("keydown", function (ev) {   // up/down arrows step through the list like in Outlook
       if (ev.key !== "ArrowDown" && ev.key !== "ArrowUp") return;
