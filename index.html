@@ -53,7 +53,7 @@
   .hstats .note { margin: 0; }
   .empty { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 40px; color: var(--muted); font-size: 13px; }
   .empty b { color: var(--good); margin-right: 6px; }
-  .hcount.statbtn { font-size: 28px; font-weight: 700; line-height: 1; }
+  .hcount.count, .hcount.statbtn { font-size: 28px; font-weight: 700; line-height: 1; }
   .tile.compact .stats { gap: 4px 16px; flex-wrap: nowrap; margin-top: 2px; }
   .tile.compact .stats > div, .tile.compact .stats > .statbtn { display: flex; align-items: baseline; gap: 5px; }
   .tile.compact .stats .count { font-size: 26px; }
@@ -198,7 +198,12 @@
   .chip:disabled { opacity: .5; }
   .rspacer { flex: 1; }
   .rbar a { color: var(--accent); font-size: 13px; }
-  button.danger { color: var(--bad); border-color: var(--bad); }
+  button.danger { background: var(--bad); border-color: var(--bad); color: var(--on-accent); font-weight: 600; }
+  button.danger:hover:not(:disabled) { background: var(--bad); border-color: var(--bad); filter: brightness(.9); }
+  button.danger:disabled { opacity: .45; }
+  .rbar a#rdOpen { display: inline-flex; align-items: center; align-self: stretch; box-sizing: border-box; padding: 7px 12px; border-radius: 8px; background: var(--accent); border: 1px solid var(--accent); color: var(--on-accent); font: inherit; font-weight: 600; text-decoration: none; }
+  .rbar a#rdOpen:hover { filter: brightness(.9); }
+  .rbar a#rdOpen:focus-visible, button.danger:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
   .imgbar { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; margin-bottom: 8px; font-size: 13px; color: var(--muted); }
   .imgbar button { padding: 3px 10px; font-size: 13px; }
   .imgbar[hidden] { display: none; }
@@ -895,9 +900,9 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     var right = el("div", "hright");
     if (t.history && t.state !== "need") {
       var HB = { log: "Open the support log: emails saved in SharePoint", logperson: "Open the support log, only emails from or logged by " + (cfg.logPerson || "this person"), mail: "Open the history of everything you sent and received", trello: "Open recent Trello notifications, read and unread" };
-      var hb = el("button", "histbtn" + (t.fifth ? " iconly" : "")); hb.type = "button"; hb.dataset.fid = "hist-" + k;
+      var hb = el("button", "histbtn iconly"); hb.type = "button"; hb.dataset.fid = "hist-" + k;
       hb.title = HB[t.history]; hb.setAttribute("aria-label", "History: " + HB[t.history]);
-      hb.appendChild(historyIcon()); if (!t.fifth) hb.appendChild(document.createTextNode("History"));
+      hb.appendChild(historyIcon());
       hb.addEventListener("click", function () { openHistory(t.history, "hist-" + k); });
       right.appendChild(hb);
     }
