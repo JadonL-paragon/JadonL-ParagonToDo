@@ -129,6 +129,77 @@
   #vlSearch[hidden] { display: none; }
   .vread.logmode .rlabel, .vread.logmode #rdChips, .vread.logmode #rdDelete { display: none; }
   .vcust { font-weight: 600; }
+  .tabs { display: flex; gap: 6px; margin: 0 0 12px; }
+  .tab { padding: 6px 16px; border-radius: 999px; font-weight: 600; }
+  .tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .dnav { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
+  .dbtn { font-weight: 600; }
+  .dbtn[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
+  .dcard { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+  .dhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; margin-bottom: 12px; }
+  .dtitle { font-size: 17px; font-weight: 700; }
+  .dsub { color: var(--muted); font-size: 12.5px; }
+  .dfoot { margin: 6px 4px 24px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .kpi { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; background: var(--bg); }
+  .kpi .n { font-size: 32px; font-weight: 700; line-height: 1.15; }
+  .kpi .l { font-size: 13px; font-weight: 600; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12.5px; color: var(--muted); margin: 6px 0; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; }
+  .sw-in { background: var(--accent); } .sw-out { background: var(--good); }
+  .chart { width: 100%; height: auto; display: block; }
+  .chart text { fill: var(--muted); font-size: 11px; }
+  .chart .grid { stroke: var(--line); stroke-width: 1; }
+  .chart .b-in { fill: var(--accent); } .chart .b-out { fill: var(--good); }
+  .prow { display: grid; grid-template-columns: minmax(110px, 200px) 1fr 44px; gap: 10px; align-items: center; padding: 5px 0; font-size: 14px; }
+  .pbar { height: 10px; border-radius: 5px; background: var(--bg); overflow: hidden; }
+  .pbar i { display: block; height: 100%; background: var(--good); border-radius: 5px; }
+  .pnum { text-align: right; font-weight: 700; }
+  .todaybtn { background: none; border: 0; padding: 2px 6px; font-size: 12.5px; color: var(--muted); border-radius: 6px; }
+  .todaybtn b { color: var(--text); font-size: 14px; }
+  .todaybtn:hover { background: var(--bg); }
+  :root { --route: #4a97ff; --route-edge: #1b64d6; --pin: #ff453a; }
+  .gl-ctl { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .gl-ctl select { width: auto; min-width: 150px; }
+  .gl-lbl-bad { color: var(--bad); font-weight: 600; }
+  .gl-chk { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); }
+  .gl-scroll { overflow-x: auto; padding-bottom: 6px; }
+  .gl-inner { position: relative; }
+  .gl-row { display: flex; border-bottom: 1px solid var(--line); }
+  .gl-head { min-height: 44px; }
+  .gl-label { width: 230px; flex: none; position: sticky; left: 0; z-index: 4; background: var(--card); padding: 9px 12px 8px 4px; box-sizing: border-box; }
+  .gl-name { display: block; font-weight: 600; font-size: 14px; color: var(--text); text-decoration: none; overflow-wrap: anywhere; }
+  a.gl-name:hover { text-decoration: underline; }
+  .gl-meta { display: flex; flex-wrap: wrap; gap: 3px 8px; margin-top: 4px; font-size: 12px; color: var(--muted); }
+  .gl-owner { border: 1px solid var(--line); border-radius: 999px; padding: 0 7px; }
+  .gl-track { position: relative; flex: none; height: 64px; background-image: linear-gradient(to right, var(--line) 1px, transparent 1px); background-repeat: repeat-x; }
+  .gl-head .gl-track { height: 44px; background: none; }
+  .gl-month { position: absolute; top: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
+  .gl-monthline { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line); }
+  .gl-todaytag { position: absolute; top: 23px; transform: translateX(-50%); background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 700; padding: 1px 9px; border-radius: 999px; z-index: 3; }
+  .gl-todayline { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--accent); opacity: .35; }
+  .gl-seg { position: absolute; height: 7px; margin-top: -3.5px; border-radius: 4px; }
+  .gl-solid { background: var(--route); box-shadow: 0 0 0 1.5px var(--route-edge); }
+  .gl-late { background: var(--pin); box-shadow: 0 0 0 1.5px #b3261e; }
+  .gl-dots { height: 8px; margin-top: -4px; border-radius: 0; background: radial-gradient(circle at center, var(--route) 38%, transparent 42%) 0 0 / 10px 8px repeat-x; }
+  .gl-start { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #0a84ff; border: 3px solid #fff; box-sizing: border-box; box-shadow: 0 0 0 1px rgba(0,0,0,.3); z-index: 2; }
+  .gl-start::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; background: #0a84ff; opacity: .35; z-index: -1; animation: glpulse 2.4s ease-out infinite; }
+  @keyframes glpulse { 0% { transform: scale(1); opacity: .45; } 100% { transform: scale(2.8); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .gl-start::after { animation: none; } }
+  .gl-stop { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #fff; border: 3px solid var(--route-edge); box-sizing: border-box; z-index: 2; }
+  .gl-stop-late { border-color: var(--pin); }
+  .gl-pin { position: absolute; width: 16px; height: 16px; margin: -19px 0 0 -8px; background: var(--pin); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); z-index: 3; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+  .gl-pin::after { content: ""; position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #fff; top: 5px; left: 5px; }
+  .gl-lbl { position: absolute; font-size: 11.5px; white-space: nowrap; color: var(--muted); }
+  .gl-lbl-est { transform: translateX(-50%); }
+  .gl-lbl-due { color: var(--text); font-weight: 600; }
+  .gl-past .gl-pin, .gl-past .gl-stop { opacity: .55; }
+  .gl-lg { display: inline-block; vertical-align: middle; margin-right: 6px; box-sizing: border-box; }
+  .gl-lg-start { width: 11px; height: 11px; border-radius: 50%; background: #0a84ff; border: 2.5px solid #fff; }
+  .gl-lg-solid { width: 24px; height: 6px; border-radius: 3px; background: var(--route); box-shadow: 0 0 0 1px var(--route-edge); }
+  .gl-lg-dots { width: 24px; height: 8px; background: radial-gradient(circle at center, var(--route) 38%, transparent 42%) 0 0 / 8px 8px repeat-x; }
+  .gl-lg-pin { width: 10px; height: 10px; margin-right: 8px; background: var(--pin); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); }
+  .gl-lg-late { width: 24px; height: 6px; border-radius: 3px; background: var(--pin); }
   .vsplit { display: flex; flex-direction: column; flex: 1; min-height: 0; }
   .rpanel.split { width: min(1240px, 100%); height: min(92vh, 880px); }
   .rpanel.split .vsplit { flex-direction: row; gap: 14px; }
@@ -257,10 +328,23 @@
     </div>
   </header>
 
+  <nav class="tabs" role="tablist" aria-label="Pages">
+    <button id="tabHome" class="tab" role="tab" aria-selected="true" aria-controls="viewHome" type="button">Home</button>
+    <button id="tabDash" class="tab" role="tab" aria-selected="false" aria-controls="viewDash" tabindex="-1" type="button">Dashboards</button>
+  </nav>
+
   <div id="banner"></div>
 
+  <div id="viewHome" role="tabpanel" aria-labelledby="tabHome"><div class="grid" id="grid"></div></div>
 
-  <div class="grid" id="grid"></div>
+  <section id="viewDash" role="tabpanel" aria-labelledby="tabDash" hidden>
+    <div class="dnav" role="group" aria-label="Dashboards">
+      <button class="dbtn" data-d="emails" aria-pressed="true" type="button">Support Emails</button>
+      <button class="dbtn" data-d="golive" aria-pressed="false" type="button">Go Live Dates</button>
+    </div>
+    <div id="dEmails"></div>
+    <div id="dGoLive" hidden></div>
+  </section>
 
 </main>
 
@@ -306,6 +390,11 @@
       <div><label for="sLogSite">Support log: SharePoint site</label><input id="sLogSite" type="text" autocomplete="off" spellcheck="false" placeholder="yourcompany.sharepoint.com/sites/YourSite"></div>
       <div><label for="sLogFolder">…and its folder (in the Documents library)</label><input id="sLogFolder" type="text" autocomplete="off" spellcheck="false" placeholder="Support Log"></div>
       <div><label for="sLogPerson">JadonL tile history: whose emails</label><input id="sLogPerson" type="text" autocomplete="off" spellcheck="false" placeholder="email or name, comma separated"></div>
+    </div>
+    <div class="row">
+      <div><label for="sOurDomains">Our email domains (not counted as received)</label><input id="sOurDomains" type="text" autocomplete="off" spellcheck="false" placeholder="goparagon.com"></div>
+      <div><label for="sGoBoard">Go Live Dates: Trello board</label><input id="sGoBoard" type="text" autocomplete="off" placeholder="Implementations"></div>
+      <div><label for="sGoField">…its estimated go-live date field</label><input id="sGoField" type="text" autocomplete="off" spellcheck="false" placeholder="Go_Live"></div>
     </div>
     <p class="hint">The History button on the Support Inbox tile lists the emails saved in that folder; on the JadonL tile it shows only emails from or logged by the person named here. The first time, it asks for permission to read SharePoint files.</p>
     <p class="hint">Pictures built into an email always show. Pictures fetched from the internet can tell the sender when you opened the message, so only list senders you trust. A sender\u2019s address can be forged, so a domain you list is only as safe as your mail filtering.</p>
@@ -459,6 +548,9 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     folderIn: "own",       // "own" or "shared"
     refreshSeconds: 10,
     logSite: "paragoncomputing.sharepoint.com/sites/ParadigmSupport",   // SharePoint site that holds the support log
+    ourDomains: "goparagon.com",   // email from these domains is "ours": not counted as received, and counted as sent out in the log
+    goLiveBoard: "Implementations",   // Trello board for the Go Live Dates dashboard
+    goLiveField: "Go_Live",   // that board\u2019s custom field holding the estimated go-live date (the card\u2019s due date is the guaranteed date)
     logPerson: "JadonL@goparagon.com",   // the JadonL Support Inbox tile\u2019s History shows log emails from or logged by this person (email or name, comma separated)
     logFolder: "Support Log",   // folder (in the site\u2019s Documents library) with the saved .eml emails
     trelloAssignList: "To Be Assigned",   // Trello list whose open cards are counted on the Trello tile
@@ -478,7 +570,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     name: CONFIG.name, clientId: CONFIG.clientId, tenantId: CONFIG.tenantId, shared: CONFIG.sharedMailbox,
     folder: CONFIG.folderName, folderIn: CONFIG.folderIn, refresh: CONFIG.refreshSeconds,
     badge: { support: true, folder: true, personal: true, teams: true, calendar: false, team: false, trello: true },
-    dismissed: [], notify: false, teamPrefix: "Support", trelloKey: "", trelloToken: "", trelloAssignList: CONFIG.trelloAssignList, trelloAssignBoards: CONFIG.trelloAssignBoards, imageAllow: "", logSite: CONFIG.logSite, logFolder: CONFIG.logFolder, logPerson: CONFIG.logPerson
+    dismissed: [], notify: false, teamPrefix: "Support", trelloKey: "", trelloToken: "", trelloAssignList: CONFIG.trelloAssignList, trelloAssignBoards: CONFIG.trelloAssignBoards, imageAllow: "", logSite: CONFIG.logSite, logFolder: CONFIG.logFolder, logPerson: CONFIG.logPerson, ourDomains: CONFIG.ourDomains, goLiveBoard: CONFIG.goLiveBoard, goLiveField: CONFIG.goLiveField
   };
   var msalApp = null, account = null, me = null;
   var tiles = {}, busy = false, timer = null, needSignIn = false;
@@ -801,7 +893,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       calendar: { title: "Meetings Today", kind: "cal", half: true, compact: true, run: loadCal },
       support: { title: CONFIG.titles.support, kind: "mail", half: true, compact: true, history: "log",
         need: function () { return cfg.shared.trim() ? null : "Add the support mailbox address in Settings."; },
-        run: function (t) { return loadMail(t, sharedBase(), "inbox"); } },
+        run: async function (t) { await loadMail(t, sharedBase(), "inbox"); try { await refreshTodayIn(t); } catch (e) { /* the "today" number is a bonus; never let it break the tile */ } } },
       folder: { title: CONFIG.titles.folder, kind: "mail", half: true, history: "logperson",
         need: function () {
           if (!cfg.folder.trim()) return "Add your folder name in Settings.";
@@ -898,6 +990,13 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     head.appendChild(h2);
     var firstLoad = t.state === "loading" && t.count == null && !t.loaded;
     var right = el("div", "hright");
+    if (t.todayIn != null && t.state !== "need") {
+      var tb = el("button", "todaybtn"); tb.type = "button"; tb.title = "Emails that arrived in the support box today. Click for the dashboard";
+      tb.setAttribute("aria-label", t.todayIn + " email" + (t.todayIn === 1 ? "" : "s") + " received today. Open the support emails dashboard");
+      var tbn = el("b", "", String(t.todayIn)); tb.appendChild(tbn); tb.appendChild(document.createTextNode(" today"));
+      tb.addEventListener("click", function () { openDashboard("emails"); });
+      right.appendChild(tb);
+    }
     if (t.history && t.state !== "need") {
       var HB = { log: "Open the support log: emails saved in SharePoint", logperson: "Open the support log, only emails from or logged by " + (cfg.logPerson || "this person"), mail: "Open the history of everything you sent and received", trello: "Open recent Trello notifications, read and unread" };
       var hb = el("button", "histbtn iconly"); hb.type = "button"; hb.dataset.fid = "hist-" + k;
@@ -982,7 +1081,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   function sigOf(k) {
     var t = tiles[k];
     var st = (t.state === "loading" && (t.count != null || t.loaded)) ? "ok" : t.state;   // "refreshing" looks the same as "ok" when data is already showing
-    return JSON.stringify([st, t.msg, t.count, t.remaining, t.done, t.capped, t.assign, t.assignErr, t.loaded, t.people, k === "team" ? cfg.teamPrefix : 0,
+    return JSON.stringify([st, t.msg, t.count, t.remaining, t.done, t.capped, t.assign, t.assignErr, t.todayIn, t.loaded, t.people, k === "team" ? cfg.teamPrefix : 0,
       t.items && t.items.map(function (i) { return [i.id, i.title, i.tag, i.meta, i.url]; })]);
   }
   function render() {
@@ -1112,6 +1211,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     render(); updateIndicators();
     $("status").textContent = "Updated " + stamp.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
     if (fp.open) reloadFolder();
+    dashAuto();
     $("btnRefresh").disabled = false; $("btnRefresh").classList.remove("spinning"); busy = false;
   }
   function startTimer() {
@@ -1922,7 +2022,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     $("sName").value = cfg.name; $("sClient").value = cfg.clientId; $("sTenant").value = cfg.tenantId; $("sRefresh").value = cfg.refresh;
     $("sShared").value = cfg.shared; $("sFolder").value = cfg.folder; $("sFolderIn").value = cfg.folderIn;
     $("bSupport").checked = cfg.badge.support; $("bFolder").checked = cfg.badge.folder; $("bPersonal").checked = cfg.badge.personal;
-    $("bCalendar").checked = cfg.badge.calendar; $("bTeam").checked = cfg.badge.team; $("bTrello").checked = cfg.badge.trello; $("sTrelloKey").value = cfg.trelloKey; $("sTrelloToken").value = cfg.trelloToken; $("sTrelloList").value = cfg.trelloAssignList; $("sTrelloBoards").value = cfg.trelloAssignBoards; $("sImgAllow").value = cfg.imageAllow; $("sLogSite").value = cfg.logSite; $("sLogFolder").value = cfg.logFolder; $("sLogPerson").value = cfg.logPerson; $("sPrefix").value = cfg.teamPrefix;
+    $("bCalendar").checked = cfg.badge.calendar; $("bTeam").checked = cfg.badge.team; $("bTrello").checked = cfg.badge.trello; $("sTrelloKey").value = cfg.trelloKey; $("sTrelloToken").value = cfg.trelloToken; $("sTrelloList").value = cfg.trelloAssignList; $("sTrelloBoards").value = cfg.trelloAssignBoards; $("sImgAllow").value = cfg.imageAllow; $("sLogSite").value = cfg.logSite; $("sLogFolder").value = cfg.logFolder; $("sLogPerson").value = cfg.logPerson; $("sOurDomains").value = cfg.ourDomains; $("sGoBoard").value = cfg.goLiveBoard; $("sGoField").value = cfg.goLiveField; $("sPrefix").value = cfg.teamPrefix;
   }
   function syncNotifyBtn() {
     var b = $("btnNotify"), on = notifyOn();
@@ -1954,7 +2054,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       cfg.name = $("sName").value.trim() || "Work Dashboard"; cfg.clientId = $("sClient").value.trim(); cfg.tenantId = $("sTenant").value.trim();
       var r = parseInt($("sRefresh").value, 10); cfg.refresh = r >= 10 && r <= 900 ? r : 15; cfg.teamPrefix = $("sPrefix").value.trim() || "Support";
       cfg.shared = $("sShared").value.trim(); cfg.folder = $("sFolder").value.trim(); cfg.folderIn = $("sFolderIn").value;
-      cfg.badge = { support: $("bSupport").checked, folder: $("bFolder").checked, personal: $("bPersonal").checked, calendar: $("bCalendar").checked, team: $("bTeam").checked, trello: $("bTrello").checked }; cfg.trelloKey = $("sTrelloKey").value.trim(); cfg.trelloToken = $("sTrelloToken").value.trim(); cfg.trelloAssignList = $("sTrelloList").value.trim(); cfg.trelloAssignBoards = $("sTrelloBoards").value.trim(); cfg.imageAllow = $("sImgAllow").value.trim(); cfg.logSite = $("sLogSite").value.trim(); cfg.logFolder = $("sLogFolder").value.trim(); cfg.logPerson = $("sLogPerson").value.trim();
+      cfg.badge = { support: $("bSupport").checked, folder: $("bFolder").checked, personal: $("bPersonal").checked, calendar: $("bCalendar").checked, team: $("bTeam").checked, trello: $("bTrello").checked }; cfg.trelloKey = $("sTrelloKey").value.trim(); cfg.trelloToken = $("sTrelloToken").value.trim(); cfg.trelloAssignList = $("sTrelloList").value.trim(); cfg.trelloAssignBoards = $("sTrelloBoards").value.trim(); cfg.imageAllow = $("sImgAllow").value.trim(); cfg.logSite = $("sLogSite").value.trim(); cfg.logFolder = $("sLogFolder").value.trim(); cfg.logPerson = $("sLogPerson").value.trim(); cfg.ourDomains = $("sOurDomains").value.trim(); cfg.goLiveBoard = $("sGoBoard").value.trim(); cfg.goLiveField = $("sGoField").value.trim();
       saveCfg(); location.reload();
     });
     $("btnAuth").addEventListener("click", function () {
@@ -1962,8 +2062,389 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     });
   }
 
+
+  // ======================= Dashboards tab =======================
+  var DAY = 86400000;
+  function sod(d) { var x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+  function addDays(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }   // calendar-safe across daylight saving
+  function mondayOf(d) { var x = sod(d); return addDays(x, -((x.getDay() + 6) % 7)); }
+  function ymd(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function fmtDay(d, withYear) { return d.toLocaleDateString([], { month: "short", day: "numeric", year: withYear ? "numeric" : undefined }); }
+  function fmtLong(d) { return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }); }
+  var dashState = { tab: "home", which: "emails", lastLoad: 0 };
+
+  // ---------- tabs ----------
+  function showTab(name, noLoad) {
+    var dash = name === "dash";
+    dashState.tab = name;
+    $("viewHome").hidden = dash; $("viewDash").hidden = !dash;
+    $("tabHome").setAttribute("aria-selected", String(!dash)); $("tabHome").tabIndex = dash ? -1 : 0;
+    $("tabDash").setAttribute("aria-selected", String(dash)); $("tabDash").tabIndex = dash ? 0 : -1;
+    try { history.replaceState(null, "", dash ? "#dashboards" : location.pathname + location.search); } catch (e) { /* some browsers refuse on file:// pages */ }
+    if (dash) showDash(dashState.which, noLoad);
+  }
+  function showDash(which, soft) {
+    dashState.which = which;
+    document.querySelectorAll(".dbtn").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.d === which)); });
+    $("dEmails").hidden = which !== "emails"; $("dGoLive").hidden = which !== "golive";
+    if (soft) return;   // opening the page straight onto this tab: the normal refresh will fill it once you are signed in
+    if (which === "emails") loadEmailsDash(false); else loadGoLiveDash(false);
+  }
+  function openDashboard(which) { showTab("dash"); showDash(which); try { window.scrollTo(0, 0); } catch (e) { /* not available in some embedded views */ } }
+  function dashAuto() {   // called by the normal refresh cycle; the dashboards only reload about every two minutes
+    if ($("viewDash").hidden || Date.now() - dashState.lastLoad < 120000) return;
+    if (dashState.which === "emails") loadEmailsDash(false); else loadGoLiveDash(false);
+  }
+
+  // ---------- period choices ----------
+  var PERIODS = [["today", "Today"], ["yesterday", "Yesterday"], ["week", "This week"], ["lastweek", "Last week"], ["month", "This month"], ["lastmonth", "Last month"]];
+  function periodRange(key) {   // weeks run Monday to Sunday
+    var now = new Date(), t0 = sod(now), tomorrow = addDays(t0, 1), start, end;
+    if (key === "today") { start = t0; end = tomorrow; }
+    else if (key === "yesterday") { start = addDays(t0, -1); end = t0; }
+    else if (key === "week") { start = mondayOf(now); end = addDays(start, 7); }
+    else if (key === "lastweek") { end = mondayOf(now); start = addDays(end, -7); }
+    else if (key === "month") { start = new Date(now.getFullYear(), now.getMonth(), 1); end = new Date(now.getFullYear(), now.getMonth() + 1, 1); }
+    else { start = new Date(now.getFullYear(), now.getMonth() - 1, 1); end = new Date(now.getFullYear(), now.getMonth(), 1); }
+    return { key: key, start: start, end: end, shownEnd: end > tomorrow ? tomorrow : end, hourly: key === "today" || key === "yesterday" };
+  }
+  function rangeText(r) {
+    if (r.hourly) return r.start.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
+    var last = addDays(r.end, -1);
+    return fmtLong(r.start) + " \u2013 " + fmtLong(last > r.shownEnd ? addDays(r.shownEnd, -1) : last) + (last.getFullYear() !== new Date().getFullYear() ? ", " + last.getFullYear() : "");
+  }
+
+  // ---------- where the numbers come from ----------
+  function ourDomainList() { return String(cfg.ourDomains || "").toLowerCase().split(/[,;\s]+/).map(function (s) { return s.replace(/^@/, ""); }).filter(Boolean); }
+  function isOurs(addr) {
+    var d = String(addr || "").toLowerCase().split("@")[1] || "";
+    return !!d && ourDomainList().some(function (x) { return d === x || d.slice(-(x.length + 1)) === "." + x; });
+  }
+  var exclCache = {};
+  async function excludedFolderIds(base) {   // mail in these folders never "arrived" in the box
+    if (exclCache[base]) return exclCache[base];
+    var ids = {};
+    await Promise.all(["sentitems", "drafts", "junkemail", "outbox"].map(async function (n) {
+      try { var f = await gfetch(base + "/mailFolders/" + n + "?$select=id"); if (f && f.id) ids[f.id] = true; } catch (e) { /* that folder may not exist */ }
+    }));
+    exclCache[base] = ids;
+    return ids;
+  }
+  async function inMessages(start, end) {   // every email that arrived in the support mailbox in [start, end), any folder
+    if (!cfg.shared.trim()) throw new Error("Add the support mailbox address in Settings.");
+    var base = sharedBase(), ex = await excludedFolderIds(base), times = [], pages = 0;
+    var next = base + "/messages?$filter=" + encodeURIComponent("receivedDateTime ge " + start.toISOString() + " and receivedDateTime lt " + end.toISOString()) + "&$select=from,parentFolderId,receivedDateTime&$orderby=receivedDateTime desc&$top=500";
+    while (next && pages < 30) {
+      var r = await gfetch(String(next).replace(GRAPH, "")); pages++;
+      (r.value || []).forEach(function (m) {
+        if (ex[m.parentFolderId]) return;
+        var a = m.from && m.from.emailAddress && m.from.emailAddress.address;
+        if (!isOurs(a)) times.push(new Date(m.receivedDateTime));
+      });
+      next = r["@odata.nextLink"] || null;
+    }
+    return { times: times, capped: !!next };
+  }
+  var logSinceCache = null;
+  async function logSince(since) {   // support-log files created on or after `since` (plus a margin), newest first
+    if (logSinceCache && logSinceCache.key === since.getTime() && Date.now() - logSinceCache.at < 60000) return logSinceCache.items;
+    var id = await logDriveId(), folder = String(cfg.logFolder || "").trim().replace(/^\/+|\/+$/g, "");
+    var base = "/drives/" + id + "/root" + (folder ? ":/" + encodeURI(folder) + ":" : "") + "/children", sel = "$expand=listItem($expand=fields)";
+    var raw = [], r = null, cutoff = since.getTime() - 2 * DAY;
+    if (logAllCache && logAllCache.key === base && Date.now() - logAllCache.at < 60000) raw = logAllCache.list;
+    else {
+      if (logSortWorks) {
+        try { r = await gfetch(base + "?$top=200&" + sel + "&$orderby=lastModifiedDateTime desc", null, { scopes: SP_SCOPES }); if (!logOrdered(r.value || [])) r = null; }
+        catch (e) { if (!(e && e.status === 400)) throw e; r = null; }
+      }
+      if (r) {
+        raw = r.value || []; var next = r["@odata.nextLink"] || null, pages = 0;
+        while (next && pages++ < 40 && raw.length < HIST_CAP * 2) {
+          var last = raw[raw.length - 1];
+          if (last && new Date(last.lastModifiedDateTime || last.createdDateTime).getTime() < cutoff) break;
+          var r2 = await gfetch(String(next).replace(GRAPH, ""), null, { scopes: SP_SCOPES });
+          raw = raw.concat(r2.value || []); next = r2["@odata.nextLink"] || null;
+        }
+      } else {
+        logSortWorks = false;
+        var all = await logAll(base + "?$top=200&" + sel);
+        raw = all.value; logAllCache = { key: base, list: raw, truncated: all.truncated, at: Date.now() };
+      }
+    }
+    var items = raw.filter(function (x) { return x.file; }).map(logItem);
+    logSinceCache = { key: since.getTime(), items: items, at: Date.now() };
+    return items;
+  }
+
+  // ---------- Support Emails dashboard ----------
+  var de = { period: "today", data: null, loading: false, seq: 0, at: null, key: "" };
+  function hourLabel(h) { return h === 0 ? "12a" : h < 12 ? h + "a" : h === 12 ? "12p" : (h - 12) + "p"; }
+  function buildSeries(r, inTimes, outTimes) {
+    var series = [], map = {}, d, k;
+    if (r.hourly) { for (var h = 0; h < 24; h++) { map[h] = { key: h, label: hourLabel(h), full: hourLabel(h), inn: 0, out: 0 }; series.push(map[h]); } }
+    else { for (d = new Date(r.start); d < r.shownEnd; d = addDays(d, 1)) { k = ymd(d); map[k] = { key: k, date: new Date(d), label: String(d.getDate()), full: fmtLong(d), inn: 0, out: 0 }; series.push(map[k]); } }
+    if (!r.hourly && series.length <= 8) series.forEach(function (b) { b.label = b.date.toLocaleDateString([], { weekday: "short" }) + " " + b.date.getDate(); });
+    inTimes.forEach(function (t) { var b = map[r.hourly ? t.getHours() : ymd(t)]; if (b) b.inn++; });
+    outTimes.forEach(function (t) { var b = map[r.hourly ? t.getHours() : ymd(t)]; if (b) b.out++; });
+    if (r.hourly) {   // show the working hours, widened if there is mail outside them
+      var lo = 7, hi = 18;
+      series.forEach(function (b) { if (b.inn + b.out > 0) { lo = Math.min(lo, b.key); hi = Math.max(hi, b.key); } });
+      series = series.filter(function (b) { return b.key >= lo && b.key <= hi; });
+    }
+    return series;
+  }
+  function niceMax(m) {
+    var raw = Math.max(4, m) / 4, mag = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10)), step = 10 * mag;
+    [1, 2, 2.5, 5, 10].some(function (c) { if (c * mag >= raw) { step = c * mag; return true; } return false; });
+    return { max: step * 4, step: step };
+  }
+  function chartSvg(series, hourly) {
+    var W = 900, H = 250, L = 38, R = 8, T = 10, B = 28, pw = W - L - R, ph = H - T - B, n = series.length || 1, gw = pw / n;
+    var mx = 0; series.forEach(function (b) { mx = Math.max(mx, b.inn, b.out); });
+    var sc = niceMax(mx), s = '<svg class="chart" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' + (hourly ? "Emails by hour" : "Emails by day") + ': received and sent out" preserveAspectRatio="xMidYMid meet">';
+    for (var i = 0; i <= 4; i++) {
+      var y = T + ph - (ph * i / 4), v = sc.step * i;
+      s += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '"/><text x="' + (L - 6) + '" y="' + (y + 4) + '" text-anchor="end">' + v + "</text>";
+    }
+    var bw = Math.max(3, Math.min(22, gw * 0.36)), every = n > 24 ? 3 : (n > 14 ? 2 : 1);
+    series.forEach(function (b, idx) {
+      var cx = L + gw * idx + gw / 2, hi = ph * b.inn / sc.max, ho = ph * b.out / sc.max, tip = b.full + ": " + b.inn + " received, " + b.out + " sent out";
+      if (b.inn) s += '<rect class="b-in" x="' + (cx - bw - 1) + '" y="' + (T + ph - hi) + '" width="' + bw + '" height="' + hi + '" rx="2"><title>' + tip + "</title></rect>";
+      if (b.out) s += '<rect class="b-out" x="' + (cx + 1) + '" y="' + (T + ph - ho) + '" width="' + bw + '" height="' + ho + '" rx="2"><title>' + tip + "</title></rect>";
+      if (idx % every === 0) s += '<text x="' + cx + '" y="' + (H - 9) + '" text-anchor="middle">' + b.label + "</text>";
+    });
+    return s + "</svg>";
+  }
+  function kpi(n, label, sub) {
+    var k = el("div", "kpi"); k.appendChild(el("div", "n", String(n))); k.appendChild(el("div", "l", label)); if (sub) k.appendChild(el("div", "dsub", sub)); return k;
+  }
+  function renderEmailsDash() {
+    var host = $("dEmails"), r = periodRange(de.period), d = de.data;
+    host.textContent = "";
+    var card = el("div", "dcard"), head = el("div", "dhead"), left = el("div");
+    left.appendChild(el("div", "dtitle", "Support emails")); left.appendChild(el("div", "dsub", rangeText(r)));
+    var rt = el("div", "ranges"); rt.setAttribute("role", "group"); rt.setAttribute("aria-label", "Time period");
+    PERIODS.forEach(function (p) {
+      var b = el("button", "rng", p[1]); b.type = "button"; b.setAttribute("aria-pressed", String(de.period === p[0])); b.disabled = de.loading && de.period !== p[0];
+      b.addEventListener("click", function () { if (de.period !== p[0] && !de.loading) { de.period = p[0]; loadEmailsDash(true); } });
+      rt.appendChild(b);
+    });
+    head.appendChild(left); head.appendChild(rt); card.appendChild(head);
+    if (!d) { card.appendChild(el("div", "note", de.loading ? "Loading\u2026" : "Nothing loaded yet.")); host.appendChild(card); return; }
+    var kp = el("div", "kpis");
+    kp.appendChild(d.inErr ? kpi("\u2013", "Received", "unavailable") : kpi(d.inTotal, "Received", "arrived in the support box" + (d.capped ? " (limit reached)" : "")));
+    kp.appendChild(d.outErr ? kpi("\u2013", "Sent out", "unavailable") : kpi(d.outTotal, "Sent out", "logged in SharePoint"));
+    if (r.hourly) {
+      var peak = null; d.series.forEach(function (b) { if (b.inn && (!peak || b.inn > peak.inn)) peak = b; });
+      kp.appendChild(kpi(peak ? peak.full : "\u2013", "Busiest hour", peak ? peak.inn + " received" : "no email yet"));
+    } else {
+      var days = Math.max(1, d.series.length);
+      kp.appendChild(kpi((d.inTotal / days).toFixed(1), "Received per day", "over " + days + " day" + (days === 1 ? "" : "s")));
+    }
+    card.appendChild(kp);
+    if (d.inErr) card.appendChild(el("div", "err", "Received count unavailable: " + d.inErr));
+    var lg = el("div", "legend"); lg.innerHTML = '<span><i class="sw sw-in"></i>Received</span><span><i class="sw sw-out"></i>Sent out</span>';
+    card.appendChild(lg);
+    var cw = el("div", "chartwrap"); cw.innerHTML = chartSvg(d.series, r.hourly); card.appendChild(cw);
+    host.appendChild(card);
+    var pc = el("div", "dcard"), ph = el("div", "dhead"), pl = el("div");
+    pl.appendChild(el("div", "dtitle", "Sent out by person")); pl.appendChild(el("div", "dsub", "Emails from our domain in the support log, by who logged them"));
+    ph.appendChild(pl); pc.appendChild(ph);
+    if (d.needConsent) {
+      var cn = el("div", "note", "Reading the SharePoint log needs one extra permission. "), cb = el("button", "primary", "Allow");
+      cb.addEventListener("click", async function () { try { await grantScopes(SP_SCOPES); loadEmailsDash(true); } catch (e) { d.needConsent = false; d.outErr = e.message; renderEmailsDash(); } });
+      cn.appendChild(cb); pc.appendChild(cn);
+    } else if (d.outErr) pc.appendChild(el("div", "err", "Couldn\u2019t read the support log: " + d.outErr));
+    else if (!d.people.length) pc.appendChild(el("div", "note", "Nothing sent out in this period."));
+    else {
+      var top = d.people[0].count;
+      d.people.forEach(function (p) {
+        var row = el("div", "prow"), bar = el("div", "pbar"), fill = el("i");
+        fill.style.width = Math.max(2, Math.round(p.count / top * 100)) + "%"; bar.appendChild(fill);
+        row.appendChild(el("div", "pname", p.name)); row.appendChild(bar); row.appendChild(el("div", "pnum", String(p.count)));
+        pc.appendChild(row);
+      });
+    }
+    host.appendChild(pc);
+    host.appendChild(el("div", "dsub dfoot", "Received counts every email that arrived in the support mailbox in any folder, except Sent, Drafts, Junk and mail from our own domain (" + (ourDomainList().join(", ") || "none set") + "). Weeks run Monday to Sunday. Updated " + de.at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + "."));
+  }
+  async function loadEmailsDash(force) {
+    var r = periodRange(de.period), key = de.period + "|" + ymd(new Date());
+    if (!force && de.data && de.key === key && Date.now() - dashState.lastLoad < 120000) { renderEmailsDash(); return; }
+    var seq = ++de.seq; de.loading = true; de.key = key; renderEmailsDash();
+    var d = { inErr: "", outErr: "", needConsent: false, capped: false, inTotal: 0, outTotal: 0, people: [], series: [] }, inTimes = [], outTimes = [], who = {};
+    await Promise.all([
+      (async function () {
+        try { var res = await inMessages(r.start, r.shownEnd); inTimes = res.times; d.capped = res.capped; } catch (e) { d.inErr = errText(e); }
+      })(),
+      (async function () {
+        try {
+          var items = await logSince(r.start), t0 = r.start.getTime(), t1 = r.shownEnd.getTime();
+          items.forEach(function (it) {
+            var w = it.when.getTime(); if (w < t0 || w >= t1 || !isOurs(it.fromAddr)) return;
+            outTimes.push(it.when); var nm = it.by || "Unknown"; who[nm] = (who[nm] || 0) + 1;
+          });
+        } catch (e) { if (e && e.needScopes) d.needConsent = true; else d.outErr = errText(e); }
+      })()
+    ]);
+    if (seq !== de.seq) return;
+    d.inTotal = inTimes.length; d.outTotal = outTimes.length; d.series = buildSeries(r, inTimes, outTimes);
+    d.people = Object.keys(who).map(function (n) { return { name: n, count: who[n] }; }).sort(function (a, b) { return b.count - a.count || a.name.localeCompare(b.name); });
+    de.data = d; de.loading = false; de.at = new Date(); dashState.lastLoad = Date.now();
+    renderEmailsDash();
+  }
+  async function refreshTodayIn(t) {   // the small "N today" on the Support Inbox tile; fetched at most once a minute
+    var day = ymd(new Date());
+    if (t.todayKey === day && Date.now() - (t.todayAt || 0) < 60000) return;
+    var t0 = sod(new Date()), res = await inMessages(t0, addDays(t0, 1));
+    t.todayIn = res.times.length; t.todayKey = day; t.todayAt = Date.now();
+  }
+
+  // ---------- Go Live Dates dashboard (Trello Implementations board) ----------
+  var dg = { cards: [], owners: [], owner: "all", showPast: false, loading: false, err: "", at: null, seq: 0, empty: "" };
+  function normName(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
+  function dateOnly(v) { if (!v) return null; var d = new Date(v); return isNaN(d) ? null : sod(d); }
+  async function loadGoLiveDash(force) {
+    if (!force && dg.at && Date.now() - dashState.lastLoad < 120000) { renderGoLive(); return; }
+    if (!cfg.trelloKey.trim() || !cfg.trelloToken.trim()) { dg.err = "Add your Trello key and token in Settings to see this dashboard."; dg.cards = []; dg.at = new Date(); renderGoLive(); return; }
+    var seq = ++dg.seq; dg.loading = true; dg.err = ""; renderGoLive();
+    try {
+      var boards = await trelloGet("/members/me/boards?filter=open&fields=name"), want = normName(cfg.goLiveBoard);
+      var b = boards.filter(function (x) { return normName(x.name) === want; })[0] || boards.filter(function (x) { return want && normName(x.name).indexOf(want) >= 0; })[0];
+      if (!b) throw new Error("Couldn\u2019t find a Trello board named \u201c" + cfg.goLiveBoard + "\u201d.");
+      var got = await Promise.all([trelloGet("/boards/" + b.id + "/customFields"), trelloGet("/boards/" + b.id + "/lists?filter=open&fields=name"),
+        trelloGet("/boards/" + b.id + "/cards?filter=open&fields=name,due,dueComplete,idList,shortUrl&customFieldItems=true")]);
+      if (seq !== dg.seq) return;
+      var fields = got[0] || [], lists = {}, wantF = normName(cfg.goLiveField);
+      (got[1] || []).forEach(function (l) { lists[l.id] = l.name; });
+      var goF = fields.filter(function (f) { return normName(f.name) === wantF; })[0] || fields.filter(function (f) { return /golive/.test(normName(f.name)); })[0];
+      var nextF = fields.filter(function (f) { return normName(f.name) === "next"; })[0];
+      if (!goF) throw new Error("The board has no custom field called \u201c" + cfg.goLiveField + "\u201d.");
+      var cards = [];
+      (got[2] || []).forEach(function (c) {
+        var items = c.customFieldItems || [], gi = items.filter(function (i) { return i.idCustomField === goF.id; })[0], ni = nextF && items.filter(function (i) { return i.idCustomField === nextF.id; })[0];
+        var est = gi && gi.value ? dateOnly(gi.value.date || gi.value.text) : null, due = dateOnly(c.due);
+        if (!est && !due) return;
+        cards.push({ id: c.id, name: c.name, url: safeUrl(c.shortUrl), list: lists[c.idList] || "", est: est, due: due, done: !!c.dueComplete, next: ni && ni.value ? String(ni.value.text || "") : "" });
+      });
+      var owners = {}; cards.forEach(function (c) { if (c.list) owners[c.list] = 1; });
+      dg.cards = cards; dg.owners = Object.keys(owners).sort(); if (dg.owner !== "all" && !owners[dg.owner]) dg.owner = "all";
+    } catch (e) { if (seq !== dg.seq) return; dg.err = (e && e.message) || "Couldn\u2019t load the Trello board."; dg.cards = []; }
+    dg.loading = false; dg.at = new Date(); dashState.lastLoad = Date.now();
+    renderGoLive();
+  }
+  function daysBetween(a, b) { return Math.round((sod(b) - sod(a)) / DAY); }
+  function glMonths(start, totalDays, px) {
+    var out = [], d = new Date(start);
+    out.push({ x: 0, text: d.toLocaleDateString([], { month: "short", year: "numeric" }), first: true });
+    for (d = new Date(start.getFullYear(), start.getMonth() + 1, 1); daysBetween(start, d) < totalDays; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
+      out.push({ x: daysBetween(start, d) * px, text: d.toLocaleDateString([], { month: "short", year: d.getMonth() === 0 ? "numeric" : undefined }) });
+    }
+    return out;
+  }
+  function glRow(c, o) {
+    var today = o.today, X = function (d) { return Math.round(daysBetween(o.start, d) * o.px); };
+    var tx = X(today), ex = c.est ? X(c.est) : null, dx = c.due ? X(c.due) : null, Y = 28;
+    var late = !!(c.est && c.due && c.est > c.due), past = !!(Math.max(c.est ? c.est.getTime() : 0, c.due ? c.due.getTime() : 0) < today.getTime());
+    var row = el("div", "gl-row" + (past ? " gl-past" : "")); row.setAttribute("role", "listitem");
+    var lab = el("div", "gl-label"), nm;
+    if (c.url) { nm = el("a", "gl-name", c.name); nm.href = c.url; nm.target = "_blank"; nm.rel = "noopener noreferrer"; } else nm = el("div", "gl-name", c.name);
+    lab.appendChild(nm);
+    var meta = el("div", "gl-meta"); if (c.list) meta.appendChild(el("span", "gl-owner", c.list)); if (c.next) meta.appendChild(el("span", "gl-next", c.next.indexOf(":") > 0 ? c.next : "Next: " + c.next));
+    lab.appendChild(meta);
+    var parts = [c.name + "."];
+    if (c.est) parts.push("Estimated go live " + fmtDay(c.est, true) + ".");
+    if (c.due) parts.push("Guaranteed go live " + fmtDay(c.due, true) + ".");
+    if (late) parts.push(daysBetween(c.due, c.est) + " days past the guarantee.");
+    lab.appendChild(el("span", "sr", parts.join(" ")));
+    row.appendChild(lab);
+    var track = el("div", "gl-track"); track.style.width = o.trackW + "px"; track.style.backgroundSize = (7 * o.px) + "px 100%"; track.style.backgroundPosition = o.weekOffset + "px 0"; track.setAttribute("aria-hidden", "true");
+    var seg = function (cls, x1, x2) { var s = el("div", "gl-seg " + cls); s.style.left = Math.min(x1, x2) + "px"; s.style.width = Math.max(2, Math.abs(x2 - x1)) + "px"; s.style.top = Y + "px"; track.appendChild(s); };
+    var mark = function (cls, x, text) { var m = el("div", cls, text || ""); m.style.left = x + "px"; m.style.top = Y + "px"; track.appendChild(m); return m; };
+    var tl = el("div", "gl-todayline"); tl.style.left = tx + "px"; track.appendChild(tl);
+    if (!past) {
+      if (ex != null && ex >= tx) {
+        if (late) { seg("gl-solid", tx, dx >= tx ? dx : tx); seg("gl-late", Math.max(dx, tx), ex); }
+        else { seg("gl-solid", tx, ex); if (dx != null && dx > ex) seg("gl-dots", ex, dx); }
+      } else if (dx != null && dx >= tx) seg("gl-dots", tx, dx);
+      mark("gl-start", tx);
+    }
+    if (ex != null) {
+      mark("gl-stop" + (late || ex < tx ? " gl-stop-late" : ""), ex);
+      var l1;
+      if (late) { l1 = mark("gl-lbl gl-lbl-bad", ex + 13, "Est. " + fmtDay(c.est) + " \u00b7 " + daysBetween(c.due, c.est) + "d past"); l1.style.top = (Y - 9) + "px"; }
+      else { l1 = mark("gl-lbl gl-lbl-est", ex, "Est. " + fmtDay(c.est)); l1.style.top = (Y + 12) + "px"; }
+    }
+    if (dx != null) {
+      mark("gl-pin", dx);
+      var l2;
+      if (late) { l2 = mark("gl-lbl gl-lbl-est", dx, "Guaranteed " + fmtDay(c.due)); l2.style.top = (Y + 12) + "px"; }
+      else { l2 = mark("gl-lbl gl-lbl-due", dx + 13, "Guaranteed " + fmtDay(c.due)); l2.style.top = (Y - 9) + "px"; }
+    }
+    row.appendChild(track);
+    return row;
+  }
+  function renderGoLive() {
+    var host = $("dGoLive"); host.textContent = "";
+    var card = el("div", "dcard"), head = el("div", "dhead"), left = el("div");
+    left.appendChild(el("div", "dtitle", "Go Live Dates")); left.appendChild(el("div", "dsub", "Today \u2192 estimated go live (solid) \u2192 guaranteed go live (pin), from the \u201c" + cfg.goLiveBoard + "\u201d board"));
+    var ctl = el("div", "gl-ctl");
+    var sel = el("select"); sel.setAttribute("aria-label", "Show cards in list"); sel.id = "glOwner";
+    var o0 = el("option", "", "All lists"); o0.value = "all"; sel.appendChild(o0);
+    dg.owners.forEach(function (n) { var o = el("option", "", n); o.value = n; sel.appendChild(o); });
+    sel.value = dg.owner; sel.addEventListener("change", function () { dg.owner = sel.value; renderGoLive(); });
+    var lbl = el("label", "gl-chk"), chk = el("input"); chk.type = "checkbox"; chk.checked = dg.showPast; chk.addEventListener("change", function () { dg.showPast = chk.checked; renderGoLive(); });
+    lbl.appendChild(chk); lbl.appendChild(document.createTextNode(" Show past dates"));
+    var rf = el("button", "", "Refresh"); rf.type = "button"; rf.disabled = dg.loading; rf.addEventListener("click", function () { loadGoLiveDash(true); });
+    ctl.appendChild(sel); ctl.appendChild(lbl); ctl.appendChild(rf);
+    head.appendChild(left); head.appendChild(ctl); card.appendChild(head);
+    if (dg.err) card.appendChild(el("div", "err", dg.err));
+    else if (dg.loading && !dg.cards.length) card.appendChild(el("div", "note", "Loading\u2026"));
+    else {
+      var today = sod(new Date());
+      var rows = dg.cards.filter(function (c) {
+        if (dg.owner !== "all" && c.list !== dg.owner) return false;
+        var end = Math.max(c.est ? c.est.getTime() : 0, c.due ? c.due.getTime() : 0);
+        return dg.showPast || (!c.done && end >= today.getTime());
+      }).sort(function (a, b) { return (a.est || a.due) - (b.est || b.due) || a.name.localeCompare(b.name); });
+      if (!rows.length) card.appendChild(el("div", "note", dg.cards.length ? "Nothing upcoming. Tick \u201cShow past dates\u201d to see earlier ones." : "No cards on the board have a go-live or due date."));
+      else {
+        var first = today, lastD = today;
+        rows.forEach(function (c) { [c.est, c.due].forEach(function (d) { if (d) { if (d < first) first = d; if (d > lastD) lastD = d; } }); });
+        var start = addDays(first, -3), labelW = 230, avail = Math.max(420, ($("viewDash").clientWidth || 980) - 34 - labelW - 12), spanDays = daysBetween(start, lastD);
+        var px = Math.max(4, Math.min(26, (avail - 170) / (spanDays + 4))), totalDays = spanDays + Math.ceil(170 / px) + 4, trackW = Math.round(totalDays * px);
+        var o = { start: start, today: today, px: px, trackW: trackW, weekOffset: Math.round(((1 - start.getDay() + 7) % 7) * px) };
+        var scroll = el("div", "gl-scroll"), inner = el("div", "gl-inner"); inner.style.minWidth = (labelW + trackW) + "px"; inner.setAttribute("role", "list"); inner.setAttribute("aria-label", "Go live dates");
+        var hd = el("div", "gl-row gl-head"); hd.setAttribute("aria-hidden", "true"); hd.appendChild(el("div", "gl-label", ""));
+        var ht = el("div", "gl-track"); ht.style.width = trackW + "px";
+        glMonths(start, totalDays, px).forEach(function (m) { var s = el("div", "gl-month", m.text); s.style.left = (m.x + 4) + "px"; ht.appendChild(s); var ln = el("div", "gl-monthline"); ln.style.left = m.x + "px"; ht.appendChild(ln); });
+        var tl = el("div", "gl-todaytag", "Today"); tl.style.left = Math.max(26, Math.round(daysBetween(start, today) * px)) + "px"; ht.appendChild(tl);   // keep the tag from poking out of the left edge
+        hd.appendChild(ht); inner.appendChild(hd);
+        rows.forEach(function (c) { inner.appendChild(glRow(c, o)); });
+        scroll.appendChild(inner); card.appendChild(scroll);
+        var lg = el("div", "legend gl-legend");
+        lg.innerHTML = '<span><i class="gl-lg gl-lg-start"></i>Today</span><span><i class="gl-lg gl-lg-solid"></i>Estimated go live</span><span><i class="gl-lg gl-lg-dots"></i>Buffer to the guarantee</span><span><i class="gl-lg gl-lg-pin"></i>Guaranteed go live</span><span><i class="gl-lg gl-lg-late"></i>Past the guarantee</span>';
+        card.appendChild(lg);
+      }
+    }
+    host.appendChild(card);
+    if (dg.at) host.appendChild(el("div", "dsub dfoot", "Estimated go live = the card\u2019s \u201c" + cfg.goLiveField + "\u201d field. Guaranteed go live = the card\u2019s due date. Updated " + dg.at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + "."));
+  }
+  function wireDash() {
+    $("tabHome").addEventListener("click", function () { showTab("home"); });
+    $("tabDash").addEventListener("click", function () { showTab("dash"); });
+    [$("tabHome"), $("tabDash")].forEach(function (b) {
+      b.addEventListener("keydown", function (ev) {
+        if (ev.key !== "ArrowLeft" && ev.key !== "ArrowRight") return;
+        ev.preventDefault(); var go = b === $("tabHome") ? "dash" : "home"; showTab(go); $(go === "dash" ? "tabDash" : "tabHome").focus();
+      });
+    });
+    document.querySelectorAll(".dbtn").forEach(function (b) { b.addEventListener("click", function () { showDash(b.dataset.d); }); });
+    if (location.hash === "#dashboards") showTab("dash", true);
+  }
+
   async function init() {
-    wireReader(); loadCfg(); $("appTitle").textContent = cfg.name; document.title = cfg.name; defineTiles(); fillSettings(); wireUi(); syncNotifyBtn(); render(); drawFavicon("none");
+    wireReader(); loadCfg(); $("appTitle").textContent = cfg.name; document.title = cfg.name; defineTiles(); fillSettings(); wireUi(); wireDash(); syncNotifyBtn(); render(); drawFavicon("none");
     if (location.protocol === "file:") {
       showBanner("This page has to be served over https (or http://localhost) for Microsoft sign-in to work. It can\u2019t run from a file on disk.");
       $("status").textContent = "Not signed in"; return;
