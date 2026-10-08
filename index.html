@@ -159,18 +159,31 @@
   .todaybtn b { color: var(--text); font-size: 14px; }
   .todaybtn:hover { background: var(--bg); }
   :root { --route: #4a97ff; --route-edge: #1b64d6; --pin: #ff453a; }
-  .gl-ctl { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .gl-msec { margin: 2px 0 16px; }
-  .gl-mtitle { font-size: 15px; }
-  .gl-months { display: flex; gap: 8px; overflow-x: auto; margin-top: 8px; padding-bottom: 4px; }
-  .gl-mchip { position: relative; flex: none; min-width: 96px; border: 1px solid var(--line); border-radius: 10px; padding: 7px 12px; background: var(--bg); }
-  .gl-mnow { border-color: var(--accent); }
-  .gl-mname { font-size: 12px; font-weight: 600; color: var(--muted); }
-  .gl-mnum { font-size: 28px; font-weight: 700; line-height: 1.1; }
-  .gl-mcap { font-size: 11.5px; color: var(--muted); }
-  .gl-ctl select { width: auto; min-width: 150px; }
+  .gl-card { padding: 18px 18px 12px; }
+  .gl-top { align-items: center; margin-bottom: 14px; }
+  .gl-ctl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .rng .cnt { margin-left: 6px; font-weight: 700; opacity: .8; }
+  .rng[aria-pressed="true"] .cnt { opacity: 1; }
+  .gl-section + .gl-section { margin-top: 2px; }
+  .gl-grp { display: flex; align-items: center; height: 38px; background: var(--bg); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .gl-gbtn { position: sticky; left: 0; z-index: 4; display: flex; align-items: center; gap: 9px; height: 100%; width: 230px; box-sizing: border-box; padding: 0 14px 0 10px; border: 0; border-radius: 0; background: var(--bg); font-size: 14px; font-weight: 700; text-align: left; }
+  .gl-gbtn:hover { border: 0; background: color-mix(in srgb, var(--text) 6%, var(--bg)); }
+  .gl-chev { flex: none; width: 0; height: 0; border-left: 5px solid var(--muted); border-top: 4px solid transparent; border-bottom: 4px solid transparent; transition: transform .15s; }
+  .gl-gbtn[aria-expanded="true"] .gl-chev { transform: rotate(90deg); }
+  .gl-gdot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .gl-gname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gl-gcount { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .gl-headlab { display: flex; align-items: flex-end; padding-bottom: 7px !important; }
+  .gl-cap { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding-left: 6px; }
+  .gl-mn { letter-spacing: .01em; }
+  .gl-mp { min-width: 20px; text-align: center; padding: 0 7px; border-radius: 999px; font-size: 11.5px; font-weight: 700; color: var(--text); background: var(--bg); border: 1px solid var(--line); }
+  .gl-mp-now { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+  .gl-pill { padding: 0 7px; border: 1px solid var(--line); border-radius: 999px; font-size: 11.5px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+  .gl-pill-soon { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 55%, transparent); }
+  .gl-pill-bad { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 55%, transparent); }
+  .gl-row:not(.gl-head):hover .gl-label { background: color-mix(in srgb, var(--text) 5%, var(--card)); }
+  .gl-row:not(.gl-head):hover .gl-track { background-color: color-mix(in srgb, var(--text) 3%, transparent); }
   .gl-lbl-bad { color: var(--bad); font-weight: 600; }
-  .gl-chk { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); }
   .gl-scroll { overflow-x: auto; padding-bottom: 6px; }
   .gl-inner { position: relative; }
   .gl-row { display: flex; border-bottom: 1px solid var(--line); }
@@ -179,10 +192,9 @@
   .gl-name { display: block; font-weight: 600; font-size: 14px; color: var(--text); text-decoration: none; overflow-wrap: anywhere; }
   a.gl-name:hover { text-decoration: underline; }
   .gl-meta { display: flex; flex-wrap: wrap; gap: 3px 8px; margin-top: 4px; font-size: 12px; color: var(--muted); }
-  .gl-owner { border: 1px solid var(--line); border-radius: 999px; padding: 0 7px; }
   .gl-track { position: relative; flex: none; height: 64px; background-image: linear-gradient(to right, var(--line) 1px, transparent 1px); background-repeat: repeat-x; }
   .gl-head .gl-track { height: 44px; background: none; }
-  .gl-month { position: absolute; top: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
+  .gl-month { position: absolute; top: 5px; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; }
   .gl-monthline { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line); }
   .gl-todaytag { position: absolute; top: 23px; transform: translateX(-50%); background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 700; padding: 1px 9px; border-radius: 999px; z-index: 3; }
   .gl-todayline { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--accent); opacity: .35; }
@@ -202,12 +214,6 @@
   .gl-lbl-est { transform: translateX(-50%); }
   .gl-lbl-due { color: var(--text); font-weight: 600; }
   .gl-past .gl-pin, .gl-past .gl-stop { opacity: .55; }
-  .gl-lg { display: inline-block; vertical-align: middle; margin-right: 6px; box-sizing: border-box; }
-  .gl-lg-start { width: 11px; height: 11px; border-radius: 50%; background: #0a84ff; border: 2.5px solid #fff; }
-  .gl-lg-solid { width: 24px; height: 6px; border-radius: 3px; background: var(--route); box-shadow: 0 0 0 1px var(--route-edge); }
-  .gl-lg-dots { width: 24px; height: 8px; background: radial-gradient(circle at center, var(--route) 38%, transparent 42%) 0 0 / 8px 8px repeat-x; }
-  .gl-lg-pin { width: 10px; height: 10px; margin-right: 8px; background: var(--pin); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); }
-  .gl-lg-late { width: 24px; height: 6px; border-radius: 3px; background: var(--pin); }
   .vsplit { display: flex; flex-direction: column; flex: 1; min-height: 0; }
   .rpanel.split { width: min(1240px, 100%); height: min(92vh, 880px); }
   .rpanel.split .vsplit { flex-direction: row; gap: 14px; }
@@ -2311,7 +2317,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   }
 
   // ---------- Go Live Dates dashboard (Trello Implementations board) ----------
-  var dg = { cards: [], owners: [], owner: "all", showPast: false, loading: false, err: "", at: null, seq: 0, empty: "" };
+  var dg = { cards: [], owners: [], owner: "all", showPast: false, collapsed: {}, loading: false, err: "", at: null, seq: 0, empty: "" };
   function normName(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9]/g, ""); }
   function dateOnly(v) { if (!v) return null; var d = new Date(v); return isNaN(d) ? null : sod(d); }
   async function loadGoLiveDash(force) {
@@ -2350,12 +2356,13 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     renderGoLive();
   }
   function daysBetween(a, b) { return Math.round((sod(b) - sod(a)) / DAY); }
-  function glMonths(start, totalDays, px) {
+  function glMonths(start, totalDays, px) {   // month labels along the top of the calendar
     var out = [], d = new Date(start);
-    out.push({ x: 0, text: d.toLocaleDateString([], { month: "short", year: "numeric" }), first: true });
+    out.push({ x: 0, key: d.getFullYear() * 12 + d.getMonth(), text: d.toLocaleDateString([], { month: "short", year: "numeric" }) });
     for (d = new Date(start.getFullYear(), start.getMonth() + 1, 1); daysBetween(start, d) < totalDays; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
-      out.push({ x: daysBetween(start, d) * px, text: d.toLocaleDateString([], { month: "short", year: d.getMonth() === 0 ? "numeric" : undefined }) });
+      out.push({ x: daysBetween(start, d) * px, key: d.getFullYear() * 12 + d.getMonth(), text: d.toLocaleDateString([], { month: "short", year: d.getMonth() === 0 ? "numeric" : undefined }) });
     }
+    if (out.length > 1 && out[1].x < 80) out.shift();   // the first month is only a few days wide: let the next label take its place
     return out;
   }
   function notLiveMonths(cards) {
@@ -2379,7 +2386,12 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     var lab = el("div", "gl-label"), nm;
     if (c.url) { nm = el("a", "gl-name", c.name); nm.href = c.url; nm.target = "_blank"; nm.rel = "noopener noreferrer"; } else nm = el("div", "gl-name", c.name);
     lab.appendChild(nm);
-    var meta = el("div", "gl-meta"); if (c.list) meta.appendChild(el("span", "gl-owner", c.list)); if (c.next) meta.appendChild(el("span", "gl-next", c.next.indexOf(":") > 0 ? c.next : "Next: " + c.next));
+    var meta = el("div", "gl-meta"), gd = c.est || c.due, dd = gd ? daysBetween(today, gd) : null;
+    if (dd != null) {
+      var pc = late ? "gl-pill gl-pill-bad" : (dd < 0 ? "gl-pill gl-pill-bad" : (dd <= 14 ? "gl-pill gl-pill-soon" : "gl-pill"));
+      meta.appendChild(el("span", pc, late ? daysBetween(c.due, c.est) + "d past guarantee" : (dd === 0 ? "today" : dd > 0 ? "in " + dd + "d" : -dd + "d ago")));
+    }
+    if (c.next) meta.appendChild(el("span", "gl-next", c.next.indexOf(":") > 0 ? c.next : "Next: " + c.next));
     lab.appendChild(meta);
     var parts = [c.name + "."];
     if (c.est) parts.push("Estimated go live " + fmtDay(c.est, true) + ".");
@@ -2413,69 +2425,85 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     row.appendChild(track);
     return row;
   }
+  var GL_COLORS = ["#4a97ff", "#bf5af2", "#ff9f0a", "#30d158", "#64d2ff", "#ff6482"];
+  function glGroupOrder() {   // the order the lists were typed in Settings, then any others
+    var typed = String(cfg.goLiveLists || "").split(/[,;]+/).map(function (s) { return s.trim(); }).filter(Boolean), out = [];
+    typed.forEach(function (w) { dg.owners.forEach(function (n) { if (normName(n) === normName(w) && out.indexOf(n) < 0) out.push(n); }); });
+    dg.owners.forEach(function (n) { if (out.indexOf(n) < 0) out.push(n); });
+    return out;
+  }
   function renderGoLive() {
     var host = $("dGoLive"); host.textContent = "";
-    var card = el("div", "dcard"), head = el("div", "dhead"), left = el("div");
-    left.appendChild(el("div", "dtitle", "Go Live Dates")); left.appendChild(el("div", "dsub", "Today \u2192 estimated go live (solid) \u2192 guaranteed go live (pin), from the \u201c" + cfg.goLiveBoard + "\u201d board" + (String(cfg.goLiveLists || "").trim() ? ", lists: " + cfg.goLiveLists.trim() : "")));
-    var ctl = el("div", "gl-ctl");
-    var sel = el("select"); sel.setAttribute("aria-label", "Show cards in list"); sel.id = "glOwner";
-    var o0 = el("option", "", "All lists"); o0.value = "all"; sel.appendChild(o0);
-    dg.owners.forEach(function (n) { var o = el("option", "", n); o.value = n; sel.appendChild(o); });
-    sel.value = dg.owner; sel.addEventListener("change", function () { dg.owner = sel.value; renderGoLive(); });
-    var lbl = el("label", "gl-chk"), chk = el("input"); chk.type = "checkbox"; chk.checked = dg.showPast; chk.addEventListener("change", function () { dg.showPast = chk.checked; renderGoLive(); });
-    lbl.appendChild(chk); lbl.appendChild(document.createTextNode(" Show past dates"));
-    var rf = el("button", "", "Refresh"); rf.type = "button"; rf.disabled = dg.loading; rf.addEventListener("click", function () { loadGoLiveDash(true); });
-    ctl.appendChild(sel); ctl.appendChild(lbl); ctl.appendChild(rf);
+    var today = sod(new Date()), order = glGroupOrder();
+    if (dg.owner !== "all" && order.indexOf(dg.owner) < 0) dg.owner = "all";
+    var isPast = function (c) { return c.done || Math.max(c.est ? c.est.getTime() : 0, c.due ? c.due.getTime() : 0) < today.getTime(); };
+    var shown = dg.cards.filter(function (c) { return dg.showPast || !isPast(c); });
+    var card = el("div", "dcard gl-card"), head = el("div", "dhead gl-top"), left = el("div");
+    left.appendChild(el("div", "dtitle", "Go Live Dates"));
+    left.appendChild(el("div", "dsub", dg.loading ? "Loading\u2026" : (dg.at ? "Updated " + dg.at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "")));
+    var ctl = el("div", "gl-ctl"), rt = el("div", "ranges"); rt.setAttribute("role", "group"); rt.setAttribute("aria-label", "Show which list");
+    [["all", "All"]].concat(order.map(function (n) { return [n, n]; })).forEach(function (p) {
+      var n = p[0] === "all" ? shown.length : shown.filter(function (c) { return c.list === p[0]; }).length;
+      var b = el("button", "rng"); b.type = "button"; b.setAttribute("aria-pressed", String(dg.owner === p[0]));
+      b.appendChild(document.createTextNode(p[1])); b.appendChild(el("span", "cnt", String(n)));
+      b.addEventListener("click", function () { dg.owner = p[0]; renderGoLive(); });
+      rt.appendChild(b);
+    });
+    var pb = el("button", "rng", "Past dates"); pb.type = "button"; pb.setAttribute("aria-pressed", String(dg.showPast));
+    pb.addEventListener("click", function () { dg.showPast = !dg.showPast; renderGoLive(); });
+    var rf = el("button", "iconbtn"); rf.type = "button"; rf.title = "Refresh"; rf.setAttribute("aria-label", "Refresh Go Live Dates"); rf.innerHTML = $("btnRefresh").innerHTML; rf.disabled = dg.loading;
+    rf.addEventListener("click", function () { loadGoLiveDash(true); });
+    ctl.appendChild(rt); ctl.appendChild(pb); ctl.appendChild(rf);
     head.appendChild(left); head.appendChild(ctl); card.appendChild(head);
     if (dg.missing && dg.missing.length && !dg.err) card.appendChild(el("div", "note", "Not found on the board: " + dg.missing.join(", ") + ". Its lists are: " + dg.allLists.join(", ") + ". Change the names in Settings."));
     if (dg.err) card.appendChild(el("div", "err", dg.err));
     else if (dg.loading && !dg.cards.length) card.appendChild(el("div", "note", "Loading\u2026"));
     else {
-      var today = sod(new Date());
-      var rows = dg.cards.filter(function (c) {
-        if (dg.owner !== "all" && c.list !== dg.owner) return false;
-        var end = Math.max(c.est ? c.est.getTime() : 0, c.due ? c.due.getTime() : 0);
-        return dg.showPast || (!c.done && end >= today.getTime());
-      }).sort(function (a, b) { return (a.est || a.due) - (b.est || b.due) || a.name.localeCompare(b.name); });
-      var counted = dg.cards.filter(function (c) { return dg.owner === "all" || c.list === dg.owner; }), months = notLiveMonths(counted);
-      if (months.length) {
-        var ms = el("div", "gl-msec"); ms.appendChild(el("div", "dtitle gl-mtitle", "Not live yet, by month"));
-        ms.appendChild(el("div", "dsub", "Companies whose go live is in or after each month. A company counts in every month up to the one it goes live."));
-        var strip = el("div", "gl-months"); strip.setAttribute("role", "list"); strip.setAttribute("aria-label", "Companies not live yet, by month");
-        months.forEach(function (m, i) {
-          var chip = el("div", "gl-mchip" + (i === 0 ? " gl-mnow" : "")); chip.setAttribute("role", "listitem");
-          var nm = m.names.slice(0, 20).join(", ") + (m.names.length > 20 ? ", \u2026" : "");
-          chip.title = "Not live yet in " + m.start.toLocaleDateString([], { month: "long", year: "numeric" }) + ": " + nm;
-          chip.appendChild(el("div", "gl-mname", m.start.toLocaleDateString([], { month: "short", year: m.start.getMonth() === 0 || i === 0 ? "numeric" : undefined })));
-          chip.appendChild(el("div", "gl-mnum", String(m.count)));
-          chip.appendChild(el("div", "gl-mcap", m.going + " going live"));
-          chip.appendChild(el("span", "sr", " companies not live yet in " + m.start.toLocaleDateString([], { month: "long", year: "numeric" }) + ", " + m.going + " of them going live that month."));
-          strip.appendChild(chip);
-        });
-        ms.appendChild(strip); card.appendChild(ms);
-      }
-      if (!rows.length) card.appendChild(el("div", "note", dg.cards.length ? "Nothing upcoming. Tick \u201cShow past dates\u201d to see earlier ones." : "No cards on the board have a go-live or due date."));
+      var rows = shown.filter(function (c) { return dg.owner === "all" || c.list === dg.owner; });
+      if (!rows.length) card.appendChild(el("div", "note", dg.cards.length ? "Nothing upcoming. Turn on \u201cPast dates\u201d to see earlier ones." : "No cards on the board have a go-live or due date."));
       else {
         var first = today, lastD = today;
         rows.forEach(function (c) { [c.est, c.due].forEach(function (d) { if (d) { if (d < first) first = d; if (d > lastD) lastD = d; } }); });
-        var start = addDays(first, -3), labelW = 230, avail = Math.max(420, ($("viewDash").clientWidth || 980) - 34 - labelW - 12), spanDays = daysBetween(start, lastD);
+        var start = addDays(first, -3), labelW = 230, avail = Math.max(420, ($("viewDash").clientWidth || 980) - 36 - labelW - 12), spanDays = daysBetween(start, lastD);
         var px = Math.max(4, Math.min(26, (avail - 170) / (spanDays + 4))), totalDays = spanDays + Math.ceil(170 / px) + 4, trackW = Math.round(totalDays * px);
         var o = { start: start, today: today, px: px, trackW: trackW, weekOffset: Math.round(((1 - start.getDay() + 7) % 7) * px) };
-        var scroll = el("div", "gl-scroll"), inner = el("div", "gl-inner"); inner.style.minWidth = (labelW + trackW) + "px"; inner.setAttribute("role", "list"); inner.setAttribute("aria-label", "Go live dates");
-        var hd = el("div", "gl-row gl-head"); hd.setAttribute("aria-hidden", "true"); hd.appendChild(el("div", "gl-label", ""));
+        // how many companies are not live yet in each month (counts follow the list filter)
+        var months = notLiveMonths(dg.cards.filter(function (c) { return dg.owner === "all" || c.list === dg.owner; })), monthMap = {}, nowKey = today.getFullYear() * 12 + today.getMonth();
+        months.forEach(function (m) { monthMap[m.start.getFullYear() * 12 + m.start.getMonth()] = m; });
+        card.appendChild(el("div", "sr", "Companies not live yet, by month: " + months.map(function (m) { return m.start.toLocaleDateString([], { month: "long", year: "numeric" }) + " " + m.count; }).join(", ") + "."));
+        var scroll = el("div", "gl-scroll"), inner = el("div", "gl-inner"); inner.style.minWidth = (labelW + trackW) + "px";
+        var hd = el("div", "gl-row gl-head"); hd.setAttribute("aria-hidden", "true");
+        var hl = el("div", "gl-label gl-headlab"); hl.appendChild(el("span", "gl-cap", "Not live yet")); hd.appendChild(hl);
         var ht = el("div", "gl-track"); ht.style.width = trackW + "px";
-        glMonths(start, totalDays, px).forEach(function (m) { var s = el("div", "gl-month", m.text); s.style.left = (m.x + 4) + "px"; ht.appendChild(s); var ln = el("div", "gl-monthline"); ln.style.left = m.x + "px"; ht.appendChild(ln); });
-        var tl = el("div", "gl-todaytag", "Today"); tl.style.left = Math.max(26, Math.round(daysBetween(start, today) * px)) + "px"; ht.appendChild(tl);   // keep the tag from poking out of the left edge
+        glMonths(start, totalDays, px).forEach(function (m) {
+          var ln = el("div", "gl-monthline"); ln.style.left = m.x + "px"; ht.appendChild(ln);
+          var s = el("div", "gl-month"); s.style.left = (m.x + 7) + "px"; s.appendChild(el("span", "gl-mn", m.text));
+          var info = monthMap[m.key];
+          if (info) {
+            s.appendChild(el("span", "gl-mp" + (m.key === nowKey ? " gl-mp-now" : ""), String(info.count)));
+            s.title = info.count + " " + (info.count === 1 ? "company" : "companies") + " not live yet in " + info.start.toLocaleDateString([], { month: "long", year: "numeric" }) + " (" + info.going + " going live that month)";
+          }
+          ht.appendChild(s);
+        });
+        var tl = el("div", "gl-todaytag", "Today"); tl.style.left = Math.max(26, Math.round(daysBetween(start, today) * px)) + "px"; ht.appendChild(tl);
         hd.appendChild(ht); inner.appendChild(hd);
-        rows.forEach(function (c) { inner.appendChild(glRow(c, o)); });
+        order.filter(function (n) { return rows.some(function (c) { return c.list === n; }); }).forEach(function (name) {
+          var items = rows.filter(function (c) { return c.list === name; }).sort(function (a, b) { return (a.est || a.due) - (b.est || b.due) || a.name.localeCompare(b.name); });
+          var color = GL_COLORS[order.indexOf(name) % GL_COLORS.length], collapsed = !!dg.collapsed[name];
+          var sec = el("div", "gl-section"); sec.setAttribute("role", "group"); sec.setAttribute("aria-label", name + ", " + items.length + (items.length === 1 ? " company" : " companies"));
+          var gh = el("div", "gl-grp"); gh.style.minWidth = (labelW + trackW) + "px";
+          var gb = el("button", "gl-gbtn"); gb.type = "button"; gb.setAttribute("aria-expanded", String(!collapsed));
+          var dot = el("span", "gl-gdot"); dot.style.background = color; dot.setAttribute("aria-hidden", "true");
+          gb.appendChild(el("span", "gl-chev")); gb.appendChild(dot); gb.appendChild(el("span", "gl-gname", name)); gb.appendChild(el("span", "gl-gcount", String(items.length)));
+          gb.addEventListener("click", function () { dg.collapsed[name] = !dg.collapsed[name]; renderGoLive(); });
+          gh.appendChild(gb); sec.appendChild(gh);
+          if (!collapsed) { var list = el("div", "gl-list"); list.setAttribute("role", "list"); list.setAttribute("aria-label", name); items.forEach(function (c) { list.appendChild(glRow(c, o)); }); sec.appendChild(list); }
+          inner.appendChild(sec);
+        });
         scroll.appendChild(inner); card.appendChild(scroll);
-        var lg = el("div", "legend gl-legend");
-        lg.innerHTML = '<span><i class="gl-lg gl-lg-start"></i>Today</span><span><i class="gl-lg gl-lg-solid"></i>Estimated go live</span><span><i class="gl-lg gl-lg-dots"></i>Buffer to the guarantee</span><span><i class="gl-lg gl-lg-pin"></i>Guaranteed go live</span><span><i class="gl-lg gl-lg-late"></i>Past the guarantee</span>';
-        card.appendChild(lg);
       }
     }
     host.appendChild(card);
-    if (dg.at) host.appendChild(el("div", "dsub dfoot", "Estimated go live = the card\u2019s \u201c" + cfg.goLiveField + "\u201d field. Guaranteed go live = the card\u2019s due date. Updated " + dg.at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + "."));
   }
   function wireDash() {
     $("tabHome").addEventListener("click", function () { showTab("home"); });
