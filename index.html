@@ -160,6 +160,14 @@
   .todaybtn:hover { background: var(--bg); }
   :root { --route: #4a97ff; --route-edge: #1b64d6; --pin: #ff453a; }
   .gl-ctl { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .gl-msec { margin: 2px 0 16px; }
+  .gl-mtitle { font-size: 15px; }
+  .gl-months { display: flex; gap: 8px; overflow-x: auto; margin-top: 8px; padding-bottom: 4px; }
+  .gl-mchip { position: relative; flex: none; min-width: 96px; border: 1px solid var(--line); border-radius: 10px; padding: 7px 12px; background: var(--bg); }
+  .gl-mnow { border-color: var(--accent); }
+  .gl-mname { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .gl-mnum { font-size: 28px; font-weight: 700; line-height: 1.1; }
+  .gl-mcap { font-size: 11.5px; color: var(--muted); }
   .gl-ctl select { width: auto; min-width: 150px; }
   .gl-lbl-bad { color: var(--bad); font-weight: 600; }
   .gl-chk { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); }
@@ -394,6 +402,7 @@
     <div class="row">
       <div><label for="sOurDomains">Our email domains (not counted as received)</label><input id="sOurDomains" type="text" autocomplete="off" spellcheck="false" placeholder="goparagon.com"></div>
       <div><label for="sGoBoard">Go Live Dates: Trello board</label><input id="sGoBoard" type="text" autocomplete="off" placeholder="Implementations"></div>
+      <div><label for="sGoLists">Go Live Dates: lists to show (comma separated)</label><input id="sGoLists" type="text" autocomplete="off" placeholder="Nate, Milford, Jadon L"></div>
       <div><label for="sGoField">…its estimated go-live date field</label><input id="sGoField" type="text" autocomplete="off" spellcheck="false" placeholder="Go_Live"></div>
     </div>
     <p class="hint">The History button on the Support Inbox tile lists the emails saved in that folder; on the JadonL tile it shows only emails from or logged by the person named here. The first time, it asks for permission to read SharePoint files.</p>
@@ -550,6 +559,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     logSite: "paragoncomputing.sharepoint.com/sites/ParadigmSupport",   // SharePoint site that holds the support log
     ourDomains: "goparagon.com",   // email from these domains is "ours": not counted as received, and counted as sent out in the log
     goLiveBoard: "Implementations",   // Trello board for the Go Live Dates dashboard
+    goLiveLists: "Nate, Milford, Jadon L",   // only these lists on the board appear on Go Live Dates (blank = every list)
     goLiveField: "Go_Live",   // that board\u2019s custom field holding the estimated go-live date (the card\u2019s due date is the guaranteed date)
     logPerson: "JadonL@goparagon.com",   // the JadonL Support Inbox tile\u2019s History shows log emails from or logged by this person (email or name, comma separated)
     logFolder: "Support Log",   // folder (in the site\u2019s Documents library) with the saved .eml emails
@@ -570,7 +580,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     name: CONFIG.name, clientId: CONFIG.clientId, tenantId: CONFIG.tenantId, shared: CONFIG.sharedMailbox,
     folder: CONFIG.folderName, folderIn: CONFIG.folderIn, refresh: CONFIG.refreshSeconds,
     badge: { support: true, folder: true, personal: true, teams: true, calendar: false, team: false, trello: true },
-    dismissed: [], notify: false, teamPrefix: "Support", trelloKey: "", trelloToken: "", trelloAssignList: CONFIG.trelloAssignList, trelloAssignBoards: CONFIG.trelloAssignBoards, imageAllow: "", logSite: CONFIG.logSite, logFolder: CONFIG.logFolder, logPerson: CONFIG.logPerson, ourDomains: CONFIG.ourDomains, goLiveBoard: CONFIG.goLiveBoard, goLiveField: CONFIG.goLiveField
+    dismissed: [], notify: false, teamPrefix: "Support", trelloKey: "", trelloToken: "", trelloAssignList: CONFIG.trelloAssignList, trelloAssignBoards: CONFIG.trelloAssignBoards, imageAllow: "", logSite: CONFIG.logSite, logFolder: CONFIG.logFolder, logPerson: CONFIG.logPerson, ourDomains: CONFIG.ourDomains, goLiveBoard: CONFIG.goLiveBoard, goLiveField: CONFIG.goLiveField, goLiveLists: CONFIG.goLiveLists
   };
   var msalApp = null, account = null, me = null;
   var tiles = {}, busy = false, timer = null, needSignIn = false;
@@ -2022,7 +2032,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     $("sName").value = cfg.name; $("sClient").value = cfg.clientId; $("sTenant").value = cfg.tenantId; $("sRefresh").value = cfg.refresh;
     $("sShared").value = cfg.shared; $("sFolder").value = cfg.folder; $("sFolderIn").value = cfg.folderIn;
     $("bSupport").checked = cfg.badge.support; $("bFolder").checked = cfg.badge.folder; $("bPersonal").checked = cfg.badge.personal;
-    $("bCalendar").checked = cfg.badge.calendar; $("bTeam").checked = cfg.badge.team; $("bTrello").checked = cfg.badge.trello; $("sTrelloKey").value = cfg.trelloKey; $("sTrelloToken").value = cfg.trelloToken; $("sTrelloList").value = cfg.trelloAssignList; $("sTrelloBoards").value = cfg.trelloAssignBoards; $("sImgAllow").value = cfg.imageAllow; $("sLogSite").value = cfg.logSite; $("sLogFolder").value = cfg.logFolder; $("sLogPerson").value = cfg.logPerson; $("sOurDomains").value = cfg.ourDomains; $("sGoBoard").value = cfg.goLiveBoard; $("sGoField").value = cfg.goLiveField; $("sPrefix").value = cfg.teamPrefix;
+    $("bCalendar").checked = cfg.badge.calendar; $("bTeam").checked = cfg.badge.team; $("bTrello").checked = cfg.badge.trello; $("sTrelloKey").value = cfg.trelloKey; $("sTrelloToken").value = cfg.trelloToken; $("sTrelloList").value = cfg.trelloAssignList; $("sTrelloBoards").value = cfg.trelloAssignBoards; $("sImgAllow").value = cfg.imageAllow; $("sLogSite").value = cfg.logSite; $("sLogFolder").value = cfg.logFolder; $("sLogPerson").value = cfg.logPerson; $("sOurDomains").value = cfg.ourDomains; $("sGoBoard").value = cfg.goLiveBoard; $("sGoField").value = cfg.goLiveField; $("sGoLists").value = cfg.goLiveLists; $("sPrefix").value = cfg.teamPrefix;
   }
   function syncNotifyBtn() {
     var b = $("btnNotify"), on = notifyOn();
@@ -2054,7 +2064,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       cfg.name = $("sName").value.trim() || "Work Dashboard"; cfg.clientId = $("sClient").value.trim(); cfg.tenantId = $("sTenant").value.trim();
       var r = parseInt($("sRefresh").value, 10); cfg.refresh = r >= 10 && r <= 900 ? r : 15; cfg.teamPrefix = $("sPrefix").value.trim() || "Support";
       cfg.shared = $("sShared").value.trim(); cfg.folder = $("sFolder").value.trim(); cfg.folderIn = $("sFolderIn").value;
-      cfg.badge = { support: $("bSupport").checked, folder: $("bFolder").checked, personal: $("bPersonal").checked, calendar: $("bCalendar").checked, team: $("bTeam").checked, trello: $("bTrello").checked }; cfg.trelloKey = $("sTrelloKey").value.trim(); cfg.trelloToken = $("sTrelloToken").value.trim(); cfg.trelloAssignList = $("sTrelloList").value.trim(); cfg.trelloAssignBoards = $("sTrelloBoards").value.trim(); cfg.imageAllow = $("sImgAllow").value.trim(); cfg.logSite = $("sLogSite").value.trim(); cfg.logFolder = $("sLogFolder").value.trim(); cfg.logPerson = $("sLogPerson").value.trim(); cfg.ourDomains = $("sOurDomains").value.trim(); cfg.goLiveBoard = $("sGoBoard").value.trim(); cfg.goLiveField = $("sGoField").value.trim();
+      cfg.badge = { support: $("bSupport").checked, folder: $("bFolder").checked, personal: $("bPersonal").checked, calendar: $("bCalendar").checked, team: $("bTeam").checked, trello: $("bTrello").checked }; cfg.trelloKey = $("sTrelloKey").value.trim(); cfg.trelloToken = $("sTrelloToken").value.trim(); cfg.trelloAssignList = $("sTrelloList").value.trim(); cfg.trelloAssignBoards = $("sTrelloBoards").value.trim(); cfg.imageAllow = $("sImgAllow").value.trim(); cfg.logSite = $("sLogSite").value.trim(); cfg.logFolder = $("sLogFolder").value.trim(); cfg.logPerson = $("sLogPerson").value.trim(); cfg.ourDomains = $("sOurDomains").value.trim(); cfg.goLiveBoard = $("sGoBoard").value.trim(); cfg.goLiveField = $("sGoField").value.trim(); cfg.goLiveLists = $("sGoLists").value.trim();
       saveCfg(); location.reload();
     });
     $("btnAuth").addEventListener("click", function () {
@@ -2316,7 +2326,13 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         trelloGet("/boards/" + b.id + "/cards?filter=open&fields=name,due,dueComplete,idList,shortUrl&customFieldItems=true")]);
       if (seq !== dg.seq) return;
       var fields = got[0] || [], lists = {}, wantF = normName(cfg.goLiveField);
-      (got[1] || []).forEach(function (l) { lists[l.id] = l.name; });
+      var boardLists = got[1] || [], wantL = String(cfg.goLiveLists || "").split(/[,;]+/).map(function (s) { return s.trim(); }).filter(Boolean), allowed = {}, missing = [];
+      boardLists.forEach(function (l) { lists[l.id] = l.name; });
+      if (wantL.length) {
+        wantL.forEach(function (w) { var hit = boardLists.filter(function (l) { return normName(l.name) === normName(w); }); if (hit.length) hit.forEach(function (l) { allowed[l.id] = true; }); else missing.push(w); });
+        if (!Object.keys(allowed).length) throw new Error("None of the lists you chose (" + wantL.join(", ") + ") exist on that board. Its lists are: " + boardLists.map(function (l) { return l.name; }).join(", ") + ".");
+      } else boardLists.forEach(function (l) { allowed[l.id] = true; });
+      dg.missing = missing; dg.allLists = boardLists.map(function (l) { return l.name; });
       var goF = fields.filter(function (f) { return normName(f.name) === wantF; })[0] || fields.filter(function (f) { return /golive/.test(normName(f.name)); })[0];
       var nextF = fields.filter(function (f) { return normName(f.name) === "next"; })[0];
       if (!goF) throw new Error("The board has no custom field called \u201c" + cfg.goLiveField + "\u201d.");
@@ -2324,7 +2340,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
       (got[2] || []).forEach(function (c) {
         var items = c.customFieldItems || [], gi = items.filter(function (i) { return i.idCustomField === goF.id; })[0], ni = nextF && items.filter(function (i) { return i.idCustomField === nextF.id; })[0];
         var est = gi && gi.value ? dateOnly(gi.value.date || gi.value.text) : null, due = dateOnly(c.due);
-        if (!est && !due) return;
+        if (!allowed[c.idList] || (!est && !due)) return;
         cards.push({ id: c.id, name: c.name, url: safeUrl(c.shortUrl), list: lists[c.idList] || "", est: est, due: due, done: !!c.dueComplete, next: ni && ni.value ? String(ni.value.text || "") : "" });
       });
       var owners = {}; cards.forEach(function (c) { if (c.list) owners[c.list] = 1; });
@@ -2339,6 +2355,19 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     out.push({ x: 0, text: d.toLocaleDateString([], { month: "short", year: "numeric" }), first: true });
     for (d = new Date(start.getFullYear(), start.getMonth() + 1, 1); daysBetween(start, d) < totalDays; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
       out.push({ x: daysBetween(start, d) * px, text: d.toLocaleDateString([], { month: "short", year: d.getMonth() === 0 ? "numeric" : undefined }) });
+    }
+    return out;
+  }
+  function notLiveMonths(cards) {
+    // A company is "not live yet" in a month if its go live (the estimate, else the guaranteed date) is in that month or later.
+    var items = cards.filter(function (c) { return !c.done && (c.est || c.due); }).map(function (c) { return { c: c, d: c.est || c.due }; });
+    if (!items.length) return [];
+    var now = new Date(), m = new Date(now.getFullYear(), now.getMonth(), 1), last = items.reduce(function (a, i) { return i.d > a ? i.d : a; }, items[0].d);
+    var lastM = new Date(last.getFullYear(), last.getMonth(), 1), out = [];
+    for (; m <= lastM && out.length < 18; m = new Date(m.getFullYear(), m.getMonth() + 1, 1)) {
+      var start = m, next = new Date(m.getFullYear(), m.getMonth() + 1, 1);
+      var notLive = items.filter(function (i) { return i.d >= start; });
+      out.push({ start: start, count: notLive.length, going: notLive.filter(function (i) { return i.d < next; }).length, names: notLive.map(function (i) { return i.c.name; }) });
     }
     return out;
   }
@@ -2387,7 +2416,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
   function renderGoLive() {
     var host = $("dGoLive"); host.textContent = "";
     var card = el("div", "dcard"), head = el("div", "dhead"), left = el("div");
-    left.appendChild(el("div", "dtitle", "Go Live Dates")); left.appendChild(el("div", "dsub", "Today \u2192 estimated go live (solid) \u2192 guaranteed go live (pin), from the \u201c" + cfg.goLiveBoard + "\u201d board"));
+    left.appendChild(el("div", "dtitle", "Go Live Dates")); left.appendChild(el("div", "dsub", "Today \u2192 estimated go live (solid) \u2192 guaranteed go live (pin), from the \u201c" + cfg.goLiveBoard + "\u201d board" + (String(cfg.goLiveLists || "").trim() ? ", lists: " + cfg.goLiveLists.trim() : "")));
     var ctl = el("div", "gl-ctl");
     var sel = el("select"); sel.setAttribute("aria-label", "Show cards in list"); sel.id = "glOwner";
     var o0 = el("option", "", "All lists"); o0.value = "all"; sel.appendChild(o0);
@@ -2398,6 +2427,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     var rf = el("button", "", "Refresh"); rf.type = "button"; rf.disabled = dg.loading; rf.addEventListener("click", function () { loadGoLiveDash(true); });
     ctl.appendChild(sel); ctl.appendChild(lbl); ctl.appendChild(rf);
     head.appendChild(left); head.appendChild(ctl); card.appendChild(head);
+    if (dg.missing && dg.missing.length && !dg.err) card.appendChild(el("div", "note", "Not found on the board: " + dg.missing.join(", ") + ". Its lists are: " + dg.allLists.join(", ") + ". Change the names in Settings."));
     if (dg.err) card.appendChild(el("div", "err", dg.err));
     else if (dg.loading && !dg.cards.length) card.appendChild(el("div", "note", "Loading\u2026"));
     else {
@@ -2407,6 +2437,23 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
         var end = Math.max(c.est ? c.est.getTime() : 0, c.due ? c.due.getTime() : 0);
         return dg.showPast || (!c.done && end >= today.getTime());
       }).sort(function (a, b) { return (a.est || a.due) - (b.est || b.due) || a.name.localeCompare(b.name); });
+      var counted = dg.cards.filter(function (c) { return dg.owner === "all" || c.list === dg.owner; }), months = notLiveMonths(counted);
+      if (months.length) {
+        var ms = el("div", "gl-msec"); ms.appendChild(el("div", "dtitle gl-mtitle", "Not live yet, by month"));
+        ms.appendChild(el("div", "dsub", "Companies whose go live is in or after each month. A company counts in every month up to the one it goes live."));
+        var strip = el("div", "gl-months"); strip.setAttribute("role", "list"); strip.setAttribute("aria-label", "Companies not live yet, by month");
+        months.forEach(function (m, i) {
+          var chip = el("div", "gl-mchip" + (i === 0 ? " gl-mnow" : "")); chip.setAttribute("role", "listitem");
+          var nm = m.names.slice(0, 20).join(", ") + (m.names.length > 20 ? ", \u2026" : "");
+          chip.title = "Not live yet in " + m.start.toLocaleDateString([], { month: "long", year: "numeric" }) + ": " + nm;
+          chip.appendChild(el("div", "gl-mname", m.start.toLocaleDateString([], { month: "short", year: m.start.getMonth() === 0 || i === 0 ? "numeric" : undefined })));
+          chip.appendChild(el("div", "gl-mnum", String(m.count)));
+          chip.appendChild(el("div", "gl-mcap", m.going + " going live"));
+          chip.appendChild(el("span", "sr", " companies not live yet in " + m.start.toLocaleDateString([], { month: "long", year: "numeric" }) + ", " + m.going + " of them going live that month."));
+          strip.appendChild(chip);
+        });
+        ms.appendChild(strip); card.appendChild(ms);
+      }
       if (!rows.length) card.appendChild(el("div", "note", dg.cards.length ? "Nothing upcoming. Tick \u201cShow past dates\u201d to see earlier ones." : "No cards on the board have a go-live or due date."));
       else {
         var first = today, lastD = today;
